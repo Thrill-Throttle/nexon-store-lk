@@ -1,0 +1,55 @@
+name: Deploy storefront to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Check out website
+        uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prepare public website files
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Path site -Force | Out-Null
+          Copy-Item index.html, app.js, styles.css, theme.css, supabase-config.js -Destination site
+          Copy-Item assets -Destination site -Recurse
+          New-Item -ItemType File -Path site/.nojekyll -Force | Out-Null
+
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Publish website
+        id: deployment
+        uses: actions/deploy-pages@v4

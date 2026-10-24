@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 540">
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#172b49"/><stop offset="1" stop-color="#0e1728"/></linearGradient>
+    <linearGradient id="bag" x2="0.8" y2="1"><stop stop-color="#76b9ff"/><stop offset="1" stop-color="#3279d3"/></linearGradient>
+    <linearGradient id="paper" x2="0.9" y2="1"><stop stop-color="#f6f7fa"/><stop offset="1" stop-color="#ccd9eb"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#4599ff" stop-opacity=".3"/><stop offset="1" stop-color="#4599ff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="720" height="540" rx="24" fill="url(#bg)"/>
+  <circle cx="410" cy="250" r="270" fill="url(#glow)"/>
+  <circle cx="360" cy="265" r="218" fill="none" stroke="#94caff" stroke-opacity=".12" stroke-width="2"/>
+  <circle cx="360" cy="265" r="174" fill="none" stroke="#94caff" stroke-opacity=".09" stroke-width="2"/>
+  <ellipse cx="360" cy="449" rx="235" ry="28" fill="#050c17" opacity=".7"/>
+  <g transform="rotate(-8 250 322)">
+    <path d="M140 241h213l-16 190H158z" fill="url(#bag)"/>
+    <path d="M203 245v-39a44 44 0 0 1 88 0v39" fill="none" stroke="#a8d4ff" stroke-width="11" stroke-linecap="round"/>
+    <path d="M177 270h144" stroke="#ffffff" stroke-opacity=".23" stroke-width="2"/>
+    <text x="194" y="345" fill="#eff7ff" font-family="Arial,sans-serif" font-weight="700" font-size="36" letter-spacing="4">NX</text>
+    <text x="196" y="372" fill="#d4e8ff" font-family="Arial,sans-serif" font-size="10" letter-spacing="3">GOOD FINDS</text>
+  </g>
+  <g transform="rotate(8 433 310)">
+    <path d="M373 258h161l-11 166H384z" fill="url(#paper)"/>
+    <path d="M417 260v-30a39 39 0 0 1 78 0v30" fill="none" stroke="#b5c8df" stroke-width="9" stroke-linecap="round"/>
+    <path d="M398 286h111" stroke="#3279d3" stroke-opacity=".22" stroke-width="2"/>
+    <circle cx="455" cy="337" r="33" fill="#397fce" opacity=".14"/>
+    <path d="M444 342c7-22 18-24 24-4 4 13 12 14 18 6" fill="none" stroke="#397fce" stroke-width="6" stroke-linecap="round"/>
+    <path d="M448 355h34" stroke="#397fce" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(115 116)"><path d="M31 85q7-55 45-55 39 0 46 55l-12 11H42z" fill="#3d9b72"/><path d="M76 83q38-62 62-47-1 41-55 55" fill="#5fbd87"/><path d="M58 80q-21-58-48-52 5 40 45 62" fill="#459e6f"/><path d="M42 91h72l-6 92H48z" fill="#d9ebff"/><path d="M48 109h60M47 120h61" stroke="#97bfe8" stroke-width="3"/></g>
+  <g transform="translate(543 325)"><circle cx="36" cy="36" r="33" fill="#397fce" opacity=".28"/><path d="m19 37 12 12 24-28" fill="none" stroke="#9ecbff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <text x="47" y="496" fill="#a7c7ed" font-family="Arial,sans-serif" font-size="13" letter-spacing="3">YOUR EVERYDAY, A LITTLE BETTER</text>
+</svg>

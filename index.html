@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#09111f">
+    <meta name="description" content="Discover useful finds for your home, everyday life and more at NEXON STORE LK.">
+    <title>NEXON STORE LK — Good finds for every day.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="theme.css">
+  </head>
+  <body>
+    <div class="announcement">
+      <span>GOOD FINDS FOR EVERY DAY</span>
+      <span class="announcement-divider">•</span>
+      <span>Everyday essentials, delivered across Sri Lanka</span>
+    </div>
+    <header class="site-header">
+      <a class="brand" href="#home" data-view="home" aria-label="NEXON STORE home">
+        <img src="assets/nexon-logo.png" alt="NEXON STORE LK">
+        <span class="brand-copy"><strong>NEXON</strong><small>STORE LK</small></span>
+      </a>
+      <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="#home" data-view="home" class="nav-link active">Home</a>
+        <a href="#products" data-view="products" class="nav-link">Shop</a>
+        <a href="#about" data-view="about" class="nav-link">About</a>
+        <a href="#admin" data-view="admin" class="nav-link admin-only" hidden>Store admin</a>
+      </nav>
+      <div class="header-actions">
+        <button class="icon-button search-toggle" type="button" aria-label="Search products"><span>⌕</span></button>
+        <button class="account-button" type="button" data-action="login"><span class="user-icon">♙</span><span>Sign in</span></button>
+        <button class="cart-button" type="button" data-view="cart" aria-label="Shopping cart">
+          <span class="bag-icon">▱</span><span class="cart-label">Cart</span><span class="cart-count">0</span>
+        </button>
+      </div>
+    </header>
+    <div class="search-bar" hidden>
+      <input type="search" placeholder="Search products..." aria-label="Search products">
+      <button type="button" data-action="search">Search <span>→</span></button>
+    </div>
+
+    <main>
+      <section class="view home-view" id="home-view">
+        <div class="hero">
+          <div class="hero-glow"></div>
+          <div class="hero-copy">
+            <div class="eyebrow"><span class="eyebrow-line"></span> GOOD FINDS FOR EVERY DAY</div>
+            <h1>Find a little<br><span>something.</span></h1>
+            <p>Discover useful, thoughtful finds for your home, your everyday and everything in between.</p>
+            <div class="hero-actions">
+              <button class="button button-primary" type="button" data-view="products">Explore the shop <span>↗</span></button>
+              <button class="text-button" type="button" data-view="about">A little about us <span>→</span></button>
+            </div>
+            <div class="hero-proof">
+              <div class="proof-avatars"><span>N</span><span>G</span><span>+</span></div>
+              <div><strong>Find things you’ll love</strong><small>A little something for everyone</small></div>
+            </div>
+          </div>
+          <div class="hero-art" aria-label="Illustration of products and shopping bags">
+            <div class="art-ring ring-one"></div><div class="art-ring ring-two"></div>
+            <div class="art-tag"><span class="status-dot"></span> SOMETHING FOR EVERY DAY</div>
+            <img class="hero-illustration" src="assets/storefront-hero.svg" alt="Illustrated shopping bags, a home plant and everyday essentials">
+            <div class="art-chip chip-top"><span>✦</span> LITTLE FINDS</div>
+            <div class="art-chip chip-bottom"><span>◉</span> AROUND YOUR HOME</div>
+            <div class="art-number">01 <span>/ EVERYDAY</span></div>
+          </div>
+          <div class="hero-pagination"><span class="pagination-active"></span><span></span><span></span></div>
+        </div>
+
+        <div class="benefits-strip">
+          <div><span class="benefit-icon">◇</span><span><strong>For every day</strong><small>Useful finds for everyone</small></span></div>
+          <div><span class="benefit-icon">⌁</span><span><strong>Islandwide delivery</strong><small>Across Sri Lanka</small></span></div>
+          <div><span class="benefit-icon">◉</span><span><strong>Personal support</strong><small>Here when you need us</small></span></div>
+          <div><span class="benefit-icon">⌂</span><span><strong>Easy bank payment</strong><small>Pay by LankaQR</small></span></div>
+        </div>
+
+        <section class="section featured-section">
+          <div class="section-heading">
+            <div><div class="eyebrow">LITTLE FINDS WE LOVE</div><h2>Picked for <span>you.</span></h2></div>
+            <button class="text-button" type="button" data-view="products">See all products <span>→</span></button>
+          </div>
+          <p class="store-status" id="featured-status" hidden></p>
+          <div class="product-grid" id="featured-products"></div>
+        </section>
+
+        <section class="category-section">
+          <div class="section-heading">
+            <div><div class="eyebrow">FIND SOMETHING YOU LOVE</div><h2>Shop by <span>category.</span></h2></div>
+            <button class="text-button admin-shortcut admin-only" type="button" data-view="admin" hidden>Manage categories <span>↗</span></button>
+          </div>
+          <div class="category-grid" id="home-categories"></div>
+        </section>
+
+        <section class="promo-banner">
+          <div class="promo-mark">NX<span>×</span></div>
+          <div><div class="eyebrow">MADE FOR THE EVERYDAY</div><h2>Little things.<br><span>Big joy.</span></h2><p>Take a look around and find your new favourite.</p></div>
+          <button class="button button-light" type="button" data-view="products">Browse the shop <span>↗</span></button>
+          <div class="promo-lines"></div>
+        </section>
+      </section>
+
+      <section class="view products-view" id="products-view" hidden>
+        <div class="page-banner"><div class="eyebrow">A LITTLE BIT OF EVERYTHING</div><h1>Explore the <span>shop.</span></h1><p>Browse across our collections and find something for home, family, work and every day.</p></div>
+        <p class="store-status catalog-status" id="catalog-status" hidden></p>
+        <div class="catalog-tools">
+          <div class="catalog-filters" id="catalog-filters"></div>
+          <div class="catalog-count" id="catalog-count"></div>
+        </div>
+        <div class="product-grid catalog-grid" id="all-products"></div>
+        <div class="empty-state" id="no-products" hidden><span>⌕</span><h2>No products found</h2><p>Try another search or category.</p><button class="text-button" type="button" data-action="clear-filters">Clear filters →</button></div>
+      </section>
+
+      <section class="view admin-login-view" id="admin-login-view" hidden>
+        <div class="page-banner admin-banner"><div class="eyebrow">AUTHORIZED STORE ADMIN</div><h1>Admin <span>sign in.</span></h1><p>Sign in with the approved Google account to manage store categories and products.</p></div>
+        <div class="admin-login-card">
+          <div class="admin-login-lock">⌑</div>
+          <div class="eyebrow">PRIVATE STORE DASHBOARD</div>
+          <h2>Your store,<br><span>in your hands.</span></h2>
+          <p id="admin-auth-message" class="admin-auth-message" role="status" aria-live="polite">Checking secure Google sign-in setup…</p>
+          <button class="button button-primary full-width" id="admin-google-login" type="button" data-action="admin-google-login" disabled><span class="google-mark" aria-hidden="true">G</span>Continue with Google <span>↗</span></button>
+          <small>Only the store administrator approved in the secure database can access admin tools. Entering an email address alone does not grant access.</small>
+          <button type="button" class="text-button" data-view="home">Back to the shop ←</button>
+        </div>
+      </section>
+
+      <section class="view admin-view" id="admin-view" hidden>
+        <div class="page-banner admin-banner"><div class="eyebrow">SECURE STORE MANAGEMENT</div><h1>Manage your <span>shop.</span></h1><p>Add categories and products. Changes are protected by Google authentication and database authorization.</p></div>
+        <div class="admin-account-bar"><div><span class="admin-account-status-dot"></span><span>Signed in as</span><strong id="admin-account-email"></strong></div><button class="button admin-signout" type="button" data-action="admin-signout">Sign out</button></div>
+        <div class="admin-feedback" id="admin-feedback" role="status" aria-live="polite" hidden></div>
+        <div class="admin-layout" id="admin-layout" hidden>
+          <section class="admin-card category-manager">
+            <div class="admin-card-heading"><div><div class="eyebrow">YOUR SHOP COLLECTIONS</div><h2>Categories</h2></div><span class="admin-counter" id="admin-category-count">0</span></div>
+            <form id="category-form" class="admin-inline-form"><label for="new-category-name">Add a category</label><div class="admin-input-row"><input id="new-category-name" name="category" maxlength="32" placeholder="e.g. Beauty & personal care" required><button class="button button-primary" type="submit">Add category <span>+</span></button></div></form>
+            <p class="admin-hint">Categories you add appear as filters in the Shop. Choose a category when you add a product.</p>
+            <div class="admin-category-list" id="admin-category-list"></div>
+          </section>
+          <section class="admin-card product-manager">
+            <div class="admin-card-heading"><div><div class="eyebrow">YOUR STORE CATALOG</div><h2 id="admin-product-heading">Add a product</h2></div><span class="admin-counter" id="admin-product-count">0</span></div>
+            <form id="product-form" class="admin-product-form">
+              <label>Product name<input name="name" maxlength="70" placeholder="e.g. Stainless steel water bottle" required></label>
+              <div class="form-row"><label>Category<select name="category" id="product-category" required></select></label><label>Price (LKR)<input name="price" type="number" min="1" step="1" placeholder="4500" required></label></div>
+              <div class="form-row"><label>Stock quantity<input name="stock" type="number" min="0" step="1" value="10" required></label><label>Product label <span class="optional">(optional)</span><input name="badge" maxlength="24" placeholder="NEW"></label></div>
+              <label>Image URL <span class="optional">(optional; use a public https:// image)</span><input name="image" type="url" placeholder="https://..."></label>
+              <label>Description<textarea name="description" rows="2" maxlength="240" placeholder="A few helpful details about the product." required></textarea></label>
+              <label class="admin-checkbox"><input name="featured" type="checkbox"> Show in featured products on the home page</label>
+              <div class="admin-form-actions"><button class="button button-primary" type="submit" id="product-submit">Add product <span>+</span></button><button class="text-button cancel-edit-button" id="cancel-product-edit" type="button" data-action="cancel-product-edit" hidden>Cancel editing</button></div>
+            </form>
+            <div class="admin-product-list-heading"><strong>Products</strong><span>Choose edit to update a listing.</span></div>
+            <div class="admin-product-list" id="admin-product-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view about-view" id="about-view" hidden>
+        <div class="page-banner about-banner"><div class="eyebrow">ABOUT NEXON STORE LK</div><h1>Good finds.<br><span>Good energy.</span></h1><p>A little bit of everything for home, family, work and your everyday.</p></div>
+        <div class="about-content">
+          <div><div class="eyebrow">OUR STORY</div><h2>A little something for <span>everyone.</span></h2></div>
+          <div class="about-copy"><p>NEXON STORE LK is a Sri Lankan online store for useful, thoughtful finds across everyday categories. Browse for your home, your family, work, travel and the little things that make a day better.</p><p>Our collection grows with the things you’re looking for. Have a question or want to see something new in the shop? We’d love to hear from you.</p><a class="button button-primary whatsapp-link" href="https://wa.me/94722924522" target="_blank" rel="noreferrer">Chat with us on WhatsApp <span>↗</span></a></div>
+        </div>
+        <div class="about-values"><div><span>01</span><strong>Picked with purpose</strong><p>Thoughtful finds for your home, family and everyday.</p></div><div><span>02</span><strong>Here to help</strong><p>Friendly support when you need advice or a hand with an order.</p></div><div><span>03</span><strong>Made for Sri Lanka</strong><p>Local service and islandwide delivery for our community.</p></div></div>
+      </section>
+
+      <section class="view cart-view" id="cart-view" hidden>
+        <div class="page-banner compact-banner"><div class="eyebrow">YOUR PICKS</div><h1>Your <span>cart.</span></h1></div>
+        <div class="cart-layout">
+          <div class="cart-items" id="cart-items"></div>
+          <aside class="order-summary" id="cart-summary"></aside>
+        </div>
+      </section>
+
+      <section class="view checkout-view" id="checkout-view" hidden>
+        <div class="page-banner compact-banner"><div class="eyebrow">ALMOST YOURS</div><h1>Checkout <span>preview.</span></h1><p>Enter your delivery details to preview the QR payment instructions.</p></div>
+        <div class="prototype-notice"><strong>Website preview:</strong> checkout and orders are not connected to a server yet. Your details are not sent or saved, and no payment should be made. Google sign-in and secure order processing can be added in the next stage.</div>
+        <div class="checkout-layout">
+          <form class="checkout-form" id="checkout-form">
+            <h2>Delivery details</h2>
+            <div class="form-row"><label>Full name<input name="name" autocomplete="name" required></label><label>Phone number<input name="phone" type="tel" autocomplete="tel" placeholder="+94" required></label></div>
+            <label>Email address<input name="email" type="email" autocomplete="email" required></label>
+            <label>Delivery address<input name="address" autocomplete="street-address" required></label>
+            <div class="form-row"><label>City<input name="city" autocomplete="address-level2" required></label><label>District<input name="district" required></label></div>
+            <label>Delivery instructions <span class="optional">(optional)</span><textarea name="instructions" rows="3"></textarea></label>
+            <button class="button button-primary full-width" type="submit">Preview payment instructions <span>→</span></button>
+          </form>
+          <aside class="order-summary" id="checkout-summary"></aside>
+        </div>
+      </section>
+
+      <section class="view payment-view" id="payment-view" hidden>
+        <div class="page-banner compact-banner"><div class="eyebrow">PAYMENT INSTRUCTIONS PREVIEW</div><h1>One last <span>step.</span></h1><p>Scan the LankaQR code with a compatible banking app.</p></div>
+        <div class="prototype-notice"><strong>Preview only — no order was placed.</strong> Do not transfer money using this demo page. Orders, authentication, and payment verification must be connected before launch.</div>
+        <div class="payment-layout">
+          <div class="payment-qr-card"><div class="eyebrow">LANKAQR PAYMENT</div><img src="assets/payment-qr.png" alt="NEXON STORE LankaQR payment code"><p>Scan with your compatible banking or payment app.</p><a class="text-button" href="assets/payment-qr.png" download="nexon-store-payment-qr.png">Download QR image ↓</a></div>
+          <div class="payment-details"><div class="payment-reference"><span>DEMO ORDER REFERENCE</span><strong id="payment-reference">—</strong></div><div class="payment-total"><span>Preview total</span><strong id="payment-total">LKR 0</strong></div><p>After completing your payment, please send your payment receipt to our official NEXON STORE WhatsApp number for verification.</p><p class="payment-warning">This preview does not create or save an order. The QR may accept real payments, so please do not pay until the store’s checkout is live and your order is confirmed.</p><a class="button button-primary full-width whatsapp-receipt" href="https://wa.me/94722924522" target="_blank" rel="noreferrer">Send payment receipt via WhatsApp <span>↗</span></a><small>WhatsApp opens with a message only. Attach and send your receipt manually.</small><button class="text-button" type="button" data-view="home">Return to the store ←</button></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-main">
+      <div class="footer-brand"><a class="brand" href="#home" data-view="home"><img src="assets/nexon-logo.png" alt=""><span class="brand-copy"><strong>NEXON</strong><small>STORE LK</small></span></a><p>Good finds for every day.</p></div>
+      <div><strong class="footer-title">Explore</strong><a href="#home" data-view="home">Home</a><a href="#products" data-view="products">Shop all products</a><a href="#about" data-view="about">About us</a><a href="#admin" data-view="admin" class="admin-only" hidden>Store admin</a></div>
+        <div><strong class="footer-title">Need a hand?</strong><a href="https://wa.me/94722924522" target="_blank" rel="noreferrer">WhatsApp: +94 72 292 4522</a><span>Islandwide, Sri Lanka</span></div>
+        <div class="footer-qr"><img src="assets/payment-qr.png" alt="Scan to pay using LankaQR"><span>Pay with LankaQR</span></div>
+      </div>
+      <div class="footer-bottom"><span>© <span id="year"></span> NEXON STORE LK. Good finds for every day.</span><span>Secure payment setup coming soon</span></div>
+    </footer>
+
+    <div class="modal-backdrop" id="product-modal" hidden><div class="product-modal modal-card" role="dialog" aria-modal="true" aria-label="Product details"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><div id="product-modal-content"></div></div></div>
+    <div class="modal-backdrop" id="login-modal" hidden><div class="login-modal modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><img src="assets/nexon-logo.png" alt="" class="login-logo"><div class="eyebrow">WELCOME TO NEXON</div><h2 id="login-title">Your account,<br><span>coming soon.</span></h2><p>Google sign-in has not been connected yet. You can still browse the store and build a cart in this preview.</p><button class="button button-primary full-width" type="button" data-action="close-modal">Got it</button><small>Authentication will be connected in the next development stage.</small></div></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

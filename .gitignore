@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.supabase/
+supabase/.temp/
+node_modules/
+.wrangler/
+.vercel/
+.DS_Store
+Thumbs.db
+desktop.ini
