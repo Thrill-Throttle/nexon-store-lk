@@ -67,10 +67,22 @@ function cartSubtotal() { return getCartEntries().reduce((sum,item)=>sum+item.pr
 function setAdminLinksVisible(visible) {
   document.querySelectorAll(".admin-only").forEach(link=>{link.hidden=!visible;});
 }
+function updateAccountButton(session) {
+  const button=document.querySelector(".account-button");
+  const label=document.getElementById("account-label");
+  const email=session?.user?.email;
+  const signedIn=Boolean(session?.user);
+  button.classList.toggle("is-signed-in",signedIn);
+  label.textContent=signedIn?"My profile":"Sign in";
+  button.setAttribute("aria-label",signedIn?`Signed in as ${email||"your account"}. Open your profile.`:"Sign in");
+  button.title=signedIn?email||"Open your profile":"Sign in";
+  button.querySelector(".user-icon").textContent=signedIn?(email?.trim().charAt(0).toUpperCase()||"♙"):"♙";
+}
 function setView(requestedView) {
   let view=requestedView;
   if(view==="admin"&&!state.adminAuthorized) view="admin-login";
   if(!views.includes(view)) return;
+  closeModals();
   state.currentView=view;
   views.forEach(name=>{document.getElementById(`${name}-view`).hidden=name!==view;});
   document.querySelectorAll(".nav-link").forEach(link=>link.classList.toggle("active",link.dataset.view===view));
@@ -262,6 +274,7 @@ function isGoogleAccount(user) {
 }
 async function updateAuthState(session) {
   state.session=session;
+  updateAccountButton(session);
   state.adminAuthorized=false;
   state.authReady=false;
   setAdminLinksVisible(false);
@@ -430,6 +443,7 @@ async function signOutAdmin() {
   }
   state.session=null;
   state.adminAuthorized=false;
+  updateAccountButton(null);
   setAdminLinksVisible(false);
   setView("home");
 }
@@ -595,7 +609,10 @@ document.addEventListener("click",event=>{
     case "quantity": changeQuantity(target.dataset.id,Number(target.dataset.delta));break;
     case "remove": removeFromCart(target.dataset.id);break;
     case "checkout": if(cartCount()) setView("checkout");break;
-    case "login": document.getElementById("login-modal").hidden=false;break;
+    case "login":
+      if(state.session?.user) setView(state.adminAuthorized?"admin":"admin-login");
+      else document.getElementById("login-modal").hidden=false;
+      break;
     case "close-modal": closeModals();break;
     case "search": searchProducts();break;
     case "clear-filters": state.search="";state.category="All";renderCatalog();break;

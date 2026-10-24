@@ -27,6 +27,8 @@ body{background:var(--bg)}
 .about-values>div{border-color:var(--line)}
 .admin-banner{padding-top:58px;padding-bottom:52px}
 .admin-only[hidden]{display:none!important}
+.account-button.is-signed-in{max-width:180px}
+.account-button.is-signed-in #account-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .admin-shortcut{white-space:nowrap}
 .admin-account-bar{max-width:1180px;margin:25px auto 0;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;background:#101a2a;border:1px solid var(--line);border-radius:4px;color:#aabbd3;font-size:11px}
 .admin-account-bar>div{display:flex;align-items:center;gap:9px;min-width:0;flex-wrap:wrap}
@@ -92,4 +94,4 @@ body{background:var(--bg)}
 
 @media(max-width:1280px){.admin-layout{margin-left:5.5%;margin-right:5.5%}.admin-account-bar,.admin-feedback{margin-left:5.5%;margin-right:5.5%}.catalog-status{margin-left:5.5%;margin-right:5.5%}}
 @media(max-width:850px){.admin-layout{grid-template-columns:1fr}.admin-account-bar,.admin-feedback{margin-left:5.5%;margin-right:5.5%}}
-@media(max-width:600px){.admin-banner{padding:44px 6%}.admin-login-card{margin:22px 5% 0;padding:23px 18px}.admin-layout{margin:18px 5% 55px;gap:14px}.admin-account-bar,.admin-feedback{margin:15px 5% 0;padding:12px}.catalog-status{margin:17px 5% 0;padding:12px;font-size:10px}.admin-card{padding:16px}.admin-category-row{gap:6px}.admin-input-row .button{padding:0 10px;font-size:9px}.admin-category-row input{padding:8px 7px}.admin-category-row .text-button,.admin-category-row .remove-item{font-size:9px}.admin-product-form .form-row{gap:9px}.admin-product-list-heading{font-size:10px}.admin-product-list-heading span{max-width:130px;text-align:right}.admin-product-row{gap:6px}.admin-product-row img{width:36px;height:36px}.admin-product-copy strong{font-size:9px}.admin-product-row .text-button,.admin-product-row .remove-item{font-size:8px}}
+@media(max-width:600px){.account-button.is-signed-in{max-width:90px;gap:5px;font-size:10px}.account-button.is-signed-in .user-icon{font-size:18px}.admin-banner{padding:44px 6%}.admin-login-card{margin:22px 5% 0;padding:23px 18px}.admin-layout{margin:18px 5% 55px;gap:14px}.admin-account-bar,.admin-feedback{margin:15px 5% 0;padding:12px}.catalog-status{margin:17px 5% 0;padding:12px;font-size:10px}.admin-card{padding:16px}.admin-category-row{gap:6px}.admin-input-row .button{padding:0 10px;font-size:9px}.admin-category-row input{padding:8px 7px}.admin-category-row .text-button,.admin-category-row .remove-item{font-size:9px}.admin-product-form .form-row{gap:9px}.admin-product-list-heading{font-size:10px}.admin-product-list-heading span{max-width:130px;text-align:right}.admin-product-row{gap:6px}.admin-product-row img{width:36px;height:36px}.admin-product-copy strong{font-size:9px}.admin-product-row .text-button,.admin-product-row .remove-item{font-size:8px}}

@@ -32,7 +32,7 @@
       </nav>
       <div class="header-actions">
         <button class="icon-button search-toggle" type="button" aria-label="Search products"><span>⌕</span></button>
-        <button class="account-button" type="button" data-action="login"><span class="user-icon">♙</span><span>Sign in</span></button>
+        <button class="account-button" type="button" data-action="login" aria-label="Sign in"><span class="user-icon" aria-hidden="true">♙</span><span id="account-label">Sign in</span></button>
         <button class="cart-button" type="button" data-view="cart" aria-label="Shopping cart">
           <span class="bag-icon">▱</span><span class="cart-label">Cart</span><span class="cart-count">0</span>
         </button>
@@ -210,7 +210,7 @@
     </footer>
 
     <div class="modal-backdrop" id="product-modal" hidden><div class="product-modal modal-card" role="dialog" aria-modal="true" aria-label="Product details"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><div id="product-modal-content"></div></div></div>
-    <div class="modal-backdrop" id="login-modal" hidden><div class="login-modal modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><img src="assets/nexon-logo.png" alt="" class="login-logo"><div class="eyebrow">WELCOME TO NEXON</div><h2 id="login-title">Your account,<br><span>coming soon.</span></h2><p>Google sign-in has not been connected yet. You can still browse the store and build a cart in this preview.</p><button class="button button-primary full-width" type="button" data-action="close-modal">Got it</button><small>Authentication will be connected in the next development stage.</small></div></div>
+    <div class="modal-backdrop" id="login-modal" hidden><div class="login-modal modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><img src="assets/nexon-logo.png" alt="" class="login-logo"><div class="eyebrow">WELCOME TO NEXON</div><h2 id="login-title">Customer accounts,<br><span>coming soon.</span></h2><p>Google sign-in is currently for the store administrator only. You can browse the shop and build a cart without an account.</p><button class="button button-primary full-width" type="button" data-view="admin-login">Store admin sign in <span>↗</span></button><small>Customer accounts are not available yet.</small></div></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
