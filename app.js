@@ -1,4 +1,6 @@
 const SUPABASE_CONFIG = window.NEXON_SUPABASE_CONFIG || {};
+const STORE_LOGO_BUCKET = "nexon-store-branding";
+const DEFAULT_STORE_LOGO = "assets/nexon-logo.png";
 const defaultCategories = ["Electronics", "Home & Living", "Fashion", "Accessories", "Outdoor & Sports"];
 let categories = [...defaultCategories];
 let products = [
@@ -32,6 +34,7 @@ const state = {
   catalogDraft:null,
   catalogDraftError:false,
   storeSettings:{delivery_fee_lkr:0},
+  logoPreviewUrl:null,
   customerOrders:[],
   adminOrders:[],
   knownAdminOrderIds:null,
@@ -53,6 +56,90 @@ function readSavedValue(key,fallback) {
   } catch(error) {
     console.error(`Could not read saved ${key}:`,error);
     return fallback;
+  }
+}
+function getPublicStoreLogoUrl(path,updatedAt) {
+  if(!path||!state.supabase) return DEFAULT_STORE_LOGO;
+  const {data}=state.supabase.storage.from(STORE_LOGO_BUCKET).getPublicUrl(path);
+  const url=new URL(data.publicUrl);
+  if(updatedAt) url.searchParams.set("v",String(updatedAt));
+  return url.href;
+}
+function applyStoreLogo(path,updatedAt) {
+  const url=getPublicStoreLogoUrl(path,updatedAt);
+  document.querySelectorAll(".store-logo").forEach(image=>{image.src=url;});
+  const preview=document.getElementById("admin-logo-preview");
+  if(preview&&!state.logoPreviewUrl) preview.src=url;
+}
+function previewStoreLogo(file) {
+  const status=document.getElementById("logo-status");
+  const preview=document.getElementById("admin-logo-preview");
+  if(!file) {
+    if(state.logoPreviewUrl) URL.revokeObjectURL(state.logoPreviewUrl);
+    state.logoPreviewUrl=null;
+    applyStoreLogo(state.storeSettings.logo_path,state.storeSettings.logo_updated_at);
+    status.textContent="Choose a PNG, JPEG, or WebP image up to 5 MB.";
+    return;
+  }
+  if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>5*1024*1024) {
+    document.getElementById("store-logo-file").value="";
+    if(state.logoPreviewUrl) URL.revokeObjectURL(state.logoPreviewUrl);
+    state.logoPreviewUrl=null;
+    applyStoreLogo(state.storeSettings.logo_path,state.storeSettings.logo_updated_at);
+    status.textContent="Choose a PNG, JPEG, or WebP image no larger than 5 MB.";
+    showAdminFeedback(status.textContent,true);
+    return;
+  }
+  if(state.logoPreviewUrl) URL.revokeObjectURL(state.logoPreviewUrl);
+  state.logoPreviewUrl=URL.createObjectURL(file);
+  preview.src=state.logoPreviewUrl;
+  status.textContent=`Previewing ${file.name}. Publish the logo when you're ready.`;
+}
+async function publishStoreLogo(form) {
+  if(!state.adminAuthorized||!state.supabase) return;
+  const file=new FormData(form).get("logo");
+  if(!(file instanceof File)||!file.size) {
+    showAdminFeedback("Choose a logo image before publishing.",true);
+    return;
+  }
+  if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>5*1024*1024) {
+    showAdminFeedback("Choose a PNG, JPEG, or WebP image no larger than 5 MB.",true);
+    return;
+  }
+  if(!window.confirm("Publish this logo across the live storefront now?")) return;
+  const button=document.getElementById("publish-logo-button");
+  button.disabled=true;
+  const status=document.getElementById("logo-status");
+  status.textContent="Uploading the new logo…";
+  let logoUploaded=false;
+  try {
+    if(!window.crypto?.randomUUID) throw new Error("Secure logo IDs are not supported by this browser.");
+    const logoPath=`store-logo/${window.crypto.randomUUID()}`;
+    const {error:uploadError}=await state.supabase.storage.from(STORE_LOGO_BUCKET)
+      .upload(logoPath,file,{cacheControl:"3600",contentType:file.type,upsert:false});
+    if(uploadError) throw uploadError;
+    logoUploaded=true;
+    const {error:updateError}=await state.supabase.rpc("admin_update_store_logo",{p_logo_path:logoPath});
+    if(updateError) throw updateError;
+    if(state.logoPreviewUrl) URL.revokeObjectURL(state.logoPreviewUrl);
+    state.logoPreviewUrl=null;
+    form.reset();
+    const settingsLoaded=await loadStoreSettings(true);
+    if(!settingsLoaded) {
+      status.textContent="Logo uploaded, but the page could not refresh its settings. Reload to verify the live logo.";
+      showAdminFeedback(status.textContent,true);
+      return;
+    }
+    status.textContent="Your new logo is now live across the storefront.";
+    showAdminFeedback("Store logo published successfully.");
+  } catch(error) {
+    console.error("Could not publish the store logo:",error);
+    status.textContent=logoUploaded
+      ?"The logo file uploaded, but publishing failed. The existing storefront logo is unchanged; check the branding migration and retry."
+      :"Logo upload failed. Check the branding migration and connection, then retry.";
+    showAdminFeedback(status.textContent,true);
+  } finally {
+    button.disabled=false;
   }
 }
 function loadCart() {
@@ -442,7 +529,7 @@ async function loadCustomerOrders() {
   renderCustomerOrders();
 }
 function selectAdminSection(section) {
-  if(!state.adminAuthorized||!["products","general","orders"].includes(section)) return;
+  if(!state.adminAuthorized||!["products","general","logo","orders"].includes(section)) return;
   state.adminSection=section;
   document.querySelectorAll(".admin-tab").forEach(tab=>{
     const active=tab.dataset.adminSection===section;
@@ -453,24 +540,27 @@ function selectAdminSection(section) {
     page.classList.toggle("is-active",page.id===`admin-${section}-section`);
   });
   if(section==="general") void loadStoreSettings(true);
+  if(section==="logo") applyStoreLogo(state.storeSettings.logo_path,state.storeSettings.logo_updated_at);
   if(section==="orders") void loadAdminOrders();
 }
 async function loadStoreSettings(showError=false) {
-  if(!state.supabase) return;
+  if(!state.supabase) return false;
   const status=document.getElementById("delivery-fee-status");
-  const {data,error}=await state.supabase.from("store_settings").select("delivery_fee_lkr").eq("id",true).single();
+  const {data,error}=await state.supabase.from("store_settings").select("delivery_fee_lkr,logo_path,logo_updated_at").eq("id",true).single();
   if(error) {
     console.error("Could not load store delivery settings:",error);
     if(status) status.textContent="Store settings could not be loaded. Apply the orders and settings migration.";
     if(showError) showAdminFeedback("Store delivery settings could not be loaded. Check the Supabase migration and connection.",true);
-    return;
+    return false;
   }
   state.storeSettings=data;
+  applyStoreLogo(data.logo_path,data.logo_updated_at);
   const input=document.getElementById("delivery-fee");
   if(input) input.value=String(data.delivery_fee_lkr);
   if(status) status.textContent=`Current fee: ${data.delivery_fee_lkr===0?"Free":lkr.format(data.delivery_fee_lkr)}.`;
   if(state.currentView==="cart") renderCart();
   if(state.currentView==="checkout") renderCheckout();
+  return true;
 }
 async function saveDeliveryFee(form) {
   if(!state.adminAuthorized||!state.supabase) return;
@@ -485,7 +575,7 @@ async function saveDeliveryFee(form) {
     showAdminFeedback("Delivery fee could not be saved. Apply the orders and settings migration, then try again.",true);
     return;
   }
-  state.storeSettings={delivery_fee_lkr:fee};
+  state.storeSettings={...state.storeSettings,delivery_fee_lkr:fee};
   const status=document.getElementById("delivery-fee-status");
   status.textContent=`Delivery fee saved: ${fee===0?"Free":lkr.format(fee)}. New orders will use this fee.`;
   showAdminFeedback("Delivery fee updated. Existing orders keep their original fee.");
@@ -1207,6 +1297,13 @@ document.getElementById("product-form").addEventListener("submit",event=>{
 document.getElementById("delivery-settings-form").addEventListener("submit",event=>{
   event.preventDefault();
   void saveDeliveryFee(event.currentTarget);
+});
+document.getElementById("store-logo-file").addEventListener("change",event=>{
+  previewStoreLogo(event.currentTarget.files?.[0]||null);
+});
+document.getElementById("logo-form").addEventListener("submit",event=>{
+  event.preventDefault();
+  void publishStoreLogo(event.currentTarget);
 });
 document.querySelector(".admin-tabs").addEventListener("click",event=>{
   const tab=event.target.closest("[data-admin-section]");

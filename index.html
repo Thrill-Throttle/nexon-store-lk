@@ -20,7 +20,7 @@
     </div>
     <header class="site-header">
       <a class="brand" href="#home" data-view="home" aria-label="NEXON STORE home">
-        <img src="assets/nexon-logo.png" alt="NEXON STORE LK">
+        <img class="store-logo" src="assets/nexon-logo.png" alt="NEXON STORE LK">
         <span class="brand-copy"><strong>NEXON</strong><small>STORE LK</small></span>
       </a>
       <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
@@ -160,6 +160,7 @@
         <nav class="admin-tabs" aria-label="Store admin pages">
           <button type="button" class="admin-tab is-active" data-admin-section="products">Products</button>
           <button type="button" class="admin-tab" data-admin-section="general">General settings</button>
+          <button type="button" class="admin-tab" data-admin-section="logo">Logo</button>
           <button type="button" class="admin-tab" data-admin-section="orders">Orders <span id="admin-order-badge" hidden>0</span></button>
         </nav>
         <div class="admin-layout" id="admin-layout" hidden>
@@ -201,6 +202,19 @@
               <div class="admin-card-heading"><div><div class="eyebrow">CUSTOMER CHECKOUTS</div><h2>Orders</h2></div><button class="button admin-signout" type="button" data-action="refresh-admin-orders">Refresh orders</button></div>
               <p class="admin-hint">Check the payment receipt in WhatsApp before approving payment. Delivery status starts at Product Packed after approval.</p>
               <div class="orders-list" id="admin-orders-list"><p class="admin-empty">Loading customer orders…</p></div>
+            </section>
+          </section>
+          <section class="admin-section" id="admin-logo-section">
+            <section class="admin-card logo-settings-card">
+              <div class="admin-card-heading"><div><div class="eyebrow">STORE BRANDING</div><h2>Website logo</h2></div></div>
+              <p class="admin-hint">Choose a PNG, JPEG, or WebP image up to 5 MB. Preview it first; publishing replaces the logo across the shop.</p>
+              <div class="store-logo-preview"><img id="admin-logo-preview" src="assets/nexon-logo.png" alt="Current store logo preview"></div>
+              <form id="logo-form" class="logo-settings-form">
+                <label for="store-logo-file">Choose logo image</label>
+                <input id="store-logo-file" name="logo" type="file" accept="image/png,image/jpeg,image/webp" required>
+                <p class="admin-hint" id="logo-status" role="status">Current logo is shown across the website.</p>
+                <button class="button button-primary" type="submit" id="publish-logo-button">Publish logo</button>
+              </form>
             </section>
           </section>
         </div>
@@ -252,7 +266,7 @@
 
     <footer class="site-footer">
       <div class="footer-main">
-      <div class="footer-brand"><a class="brand" href="#home" data-view="home"><img src="assets/nexon-logo.png" alt=""><span class="brand-copy"><strong>NEXON</strong><small>STORE LK</small></span></a><p>Good finds for every day.</p></div>
+      <div class="footer-brand"><a class="brand" href="#home" data-view="home"><img class="store-logo" src="assets/nexon-logo.png" alt=""><span class="brand-copy"><strong>NEXON</strong><small>STORE LK</small></span></a><p>Good finds for every day.</p></div>
       <div><strong class="footer-title">Explore</strong><a href="#home" data-view="home">Home</a><a href="#products" data-view="products">Shop all products</a><a href="#about" data-view="about">About us</a><a href="#admin" data-view="admin" class="admin-only" hidden>Store admin</a></div>
         <div><strong class="footer-title">Need a hand?</strong><a href="https://wa.me/94722924522" target="_blank" rel="noreferrer">WhatsApp: +94 72 292 4522</a><span>Islandwide, Sri Lanka</span></div>
         <div class="footer-qr"><img src="assets/payment-qr.png" alt="Scan to pay using LankaQR"><span>Pay with LankaQR</span></div>
@@ -261,7 +275,7 @@
     </footer>
 
     <div class="modal-backdrop" id="product-modal" hidden><div class="product-modal modal-card" role="dialog" aria-modal="true" aria-label="Product details"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><div id="product-modal-content"></div></div></div>
-    <div class="modal-backdrop" id="login-modal" hidden><div class="login-modal modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><img src="assets/nexon-logo.png" alt="" class="login-logo"><div class="eyebrow">WELCOME TO NEXON</div><h2 id="login-title">Your account,<br><span>your way.</span></h2><p>Sign in with Google to open your profile. Store administration is currently limited to the approved store account.</p>    <button class="button button-primary full-width" type="button" data-action="customer-google-login"><span class="google-mark" aria-hidden="true">G</span>Continue with Google <span>↗</span></button><small>Shopping is open to everyone. No account is needed to browse or use your cart.</small></div></div>
+    <div class="modal-backdrop" id="login-modal" hidden><div class="login-modal modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><img class="store-logo login-logo" src="assets/nexon-logo.png" alt=""><div class="eyebrow">WELCOME TO NEXON</div><h2 id="login-title">Your account,<br><span>your way.</span></h2><p>Sign in with Google to open your profile. Store administration is currently limited to the approved store account.</p>    <button class="button button-primary full-width" type="button" data-action="customer-google-login"><span class="google-mark" aria-hidden="true">G</span>Continue with Google <span>↗</span></button><small>Shopping is open to everyone. No account is needed to browse or use your cart.</small></div></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
