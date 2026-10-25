@@ -241,9 +241,30 @@ function renderFeatured() {
   if(state.catalogUnavailable) status.textContent="Our products are temporarily unavailable. Please check back soon.";
   else if(state.catalogIsDemo) status.textContent="Store preview: product listings, stock and prices are samples until the live store catalog is connected.";
 }
+function categoryIcon(category) {
+  const name=category.toLowerCase();
+  const paths=name.includes("electronic")
+    ?'<path d="m13 2-8 12h6l-1 8 9-13h-6l2-7Z"/>'
+    :name.includes("home")||name.includes("living")
+      ?'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z"/>'
+      :name.includes("fashion")||name.includes("cloth")||name.includes("wear")
+        ?'<path d="m8 5 4-2 4 2 4 3-3 4-2-1v10H9V11l-2 1-3-4 4-3Z"/><path d="M9 11h6"/>'
+        :name.includes("accessor")
+          ?'<path d="m12 2 2.5 6.5L21 11l-6.5 2.5L12 20l-2.5-6.5L3 11l6.5-2.5L12 2Z"/><path d="m19 15 1.2 2.8L23 19l-2.8 1.2L19 23l-1.2-2.8L15 19l2.8-1.2L19 15Z"/>'
+          :name.includes("outdoor")||name.includes("sport")||name.includes("travel")
+            ?'<path d="m3 19 6-9 4 5 3-4 5 8H3Z"/><circle cx="17" cy="6" r="2"/>'
+            :name.includes("beauty")||name.includes("personal")||name.includes("care")
+              ?'<path d="M9 3h6v3l2 2v12H7V8l2-2V3Z"/><path d="M9 6h6M10 12h4"/>'
+              :name.includes("food")||name.includes("grocery")
+                ?'<path d="M4 10h16l-1 10H5L4 10Z"/><path d="M3 10 6 4h12l3 6M9 4v6m6-6v6"/>'
+                :name.includes("toy")||name.includes("game")
+                  ?'<path d="M7 8h10a4 4 0 0 1 4 4v5a2 2 0 0 1-3.4 1.4L15 16H9l-2.6 2.4A2 2 0 0 1 3 17v-5a4 4 0 0 1 4-4Z"/><path d="M8 11v4m-2-2h4m6-1h.01M18 14h.01"/>'
+                  :'<path d="M12 3v18M3 12h18"/><path d="m5.6 5.6 12.8 12.8m0-12.8L5.6 18.4"/>';
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+}
 function renderHomeCategories() {
   document.getElementById("home-categories").innerHTML=categories.map((category,index)=>
-    `<button class="category-card" type="button" data-action="browse-category" data-category="${escapeHTML(category)}"><span class="category-number">${String(index+1).padStart(2,"0")} / COLLECTION</span><span class="category-art" aria-hidden="true">✦</span><strong>${escapeHTML(category)}</strong><span class="category-link">Browse collection ↗</span></button>`
+    `<button class="category-card" type="button" data-action="browse-category" data-category="${escapeHTML(category)}"><span class="category-number">${String(index+1).padStart(2,"0")} / COLLECTION</span><span class="category-art">${categoryIcon(category)}</span><strong>${escapeHTML(category)}</strong><span class="category-link">Browse collection ↗</span></button>`
   ).join("");
 }
 function renderFilters() {
