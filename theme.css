@@ -130,6 +130,29 @@ body{background:var(--bg)}
 .customer-order-card p span{color:#8fa2bc}
 .customer-order-items{display:block;margin-top:8px;color:#9eafc5;font-size:9px}
 .customer-order-card>.text-button{margin-top:10px;font-size:10px}
+.contact-layout{max-width:980px;margin:34px auto 75px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(250px,.65fr);gap:18px;align-items:start}
+.contact-card{padding:26px;background:linear-gradient(145deg,rgba(21,40,64,.96),rgba(12,22,37,.98));border:1px solid var(--line);border-radius:6px}
+.contact-card h2{margin:5px 0 9px;font-family:var(--font-display);font-size:23px}
+.contact-card>p{color:#a9bad0;font-size:11px;line-height:1.7}
+.contact-form{display:grid;gap:14px;margin-top:18px}
+.contact-form label,.order-feedback-form label{display:grid;gap:6px;color:#d5deea;font-size:10px}
+.contact-form input,.contact-form textarea,.order-feedback-form textarea{width:100%;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:3px;outline:none;background:#0c1523;color:var(--text);font:inherit;font-size:11px;resize:vertical}
+.contact-form input:focus,.contact-form textarea:focus,.order-feedback-form textarea:focus{border-color:#65adff}
+.contact-form-status{padding:11px;border:1px solid rgba(99,173,255,.25);border-radius:3px;background:rgba(51,125,207,.08);color:#c8def8}
+.contact-form-status.is-error{border-color:rgba(250,147,115,.42);background:rgba(164,65,48,.13);color:#ffc5b6}
+.contact-details small{display:block;margin-top:14px;color:#99abc2;font-size:10px}
+.order-feedback-form{display:grid;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.order-feedback-form .button{justify-self:start;min-height:36px;padding:0 13px;font-size:10px}
+.order-feedback-form .button:disabled,.contact-form .button:disabled{opacity:.55;cursor:wait}
+.customer-order-card .order-feedback-thanks{padding-top:12px;border-top:1px solid var(--line);color:#a8e5cf}
+.admin-messages-list{display:grid;gap:12px}
+.admin-message-card{padding:16px;background:#0c1523;border:1px solid var(--line);border-radius:4px}
+.admin-message-identity{display:grid;gap:4px;margin:10px 0}
+.admin-message-identity strong{color:#e3efff;font-size:12px}
+.admin-message-identity a{color:#9ecbff;font-size:10px;overflow-wrap:anywhere}
+.admin-message-card>p{margin:0;color:#bac9dc;font-size:11px;line-height:1.7;overflow-wrap:anywhere}
+.contact-view .contact-banner{padding-top:58px;padding-bottom:52px}
+@media(max-width:760px){.contact-layout{grid-template-columns:minmax(0,1fr);margin:20px 5.5% 50px}.contact-card{padding:20px}}
 .profile-note.is-error{color:#ffc5b6}
 .payment-details .whatsapp-receipt[hidden]{display:none}
 .payment-details .whatsapp-receipt{margin-top:10px;border:1px solid rgba(88,212,166,.32);background:rgba(88,212,166,.1);color:#b7ead5}

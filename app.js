@@ -35,7 +35,10 @@ const state = {
   catalogDraftError:false,
   storeSettings:{delivery_fee_lkr:0},
   customerOrders:[],
+  customerFeedbackOrderIds:new Set(),
+  customerFeedbackError:false,
   adminOrders:[],
+  adminMessages:[],
   knownAdminOrderIds:null,
   adminOrderPollTimer:null,
   currentOrder:null,
@@ -46,7 +49,7 @@ const state = {
   adminMessage:"Preparing Google sign-in…"
 };
 const lkr = new Intl.NumberFormat("en-LK",{style:"currency",currency:"LKR",maximumFractionDigits:0});
-const views = ["home","products","profile","admin-login","admin","about","cart","checkout","payment"];
+const views = ["home","products","profile","admin-login","admin","about","contact","cart","checkout","payment"];
 let toastTimer;
 
 function readSavedValue(key,fallback) {
@@ -145,6 +148,7 @@ function setView(requestedView) {
   if(view==="profile"&&state.session?.user) renderProfile();
   if(view==="admin"&&state.adminAuthorized) renderAdmin();
   if(view==="profile"&&state.session?.user) void loadCustomerOrders();
+  if(view==="contact") renderContactForm();
   if(view==="cart") renderCart();
   if(view==="checkout") renderCheckout();
   if(view==="payment") renderPayment();
@@ -510,9 +514,17 @@ function renderCustomerOrders() {
     target.innerHTML=`<p class="profile-note">You have no orders yet. Orders you place will appear here.</p>`;
     return;
   }
-  target.innerHTML=state.customerOrders.map(order=>
-    `<article class="customer-order-card"><div class="customer-order-heading"><div><strong>${escapeHTML(order.reference)}</strong><small>${new Date(order.created_at).toLocaleDateString("en-LK",{year:"numeric",month:"short",day:"numeric"})}</small></div><strong>${lkr.format(order.total_lkr)}</strong></div><p><span>Payment:</span> ${escapeHTML(paymentStatusLabel(order.payment_status))}</p><p><span>Delivery:</span> ${escapeHTML(deliveryStatusLabel(order.delivery_status))}</p><small class="customer-order-items">${(order.items||[]).map(item=>`${escapeHTML(item.product_name)} × ${item.quantity}`).join(", ")}</small><button type="button" class="text-button" data-action="view-order-payment" data-id="${escapeHTML(order.id)}">View order and payment <span>→</span></button></article>`
-  ).join("");
+  const feedbackError=state.customerFeedbackError
+    ?`<p class="profile-note is-error">Feedback status could not be checked. Refresh your order history before sending feedback.</p>`
+    :"";
+  target.innerHTML=feedbackError+state.customerOrders.map(order=>{
+    const feedback=order.delivery_status!=="delivered"
+      ?""
+      :state.customerFeedbackOrderIds.has(order.id)
+        ?`<p class="order-feedback-thanks">Thank you for sharing your feedback.</p>`
+        :`<form class="order-feedback-form" data-order-feedback="${escapeHTML(order.id)}"><label for="feedback-${escapeHTML(order.id)}">Your order is complete — how was your experience?</label><textarea id="feedback-${escapeHTML(order.id)}" name="notes" maxlength="2000" rows="3" placeholder="Share your feedback with the store." required></textarea><button class="button button-primary" type="submit">Send feedback</button></form>`;
+    return `<article class="customer-order-card"><div class="customer-order-heading"><div><strong>${escapeHTML(order.reference)}</strong><small>${new Date(order.created_at).toLocaleDateString("en-LK",{year:"numeric",month:"short",day:"numeric"})}</small></div><strong>${lkr.format(order.total_lkr)}</strong></div><p><span>Payment:</span> ${escapeHTML(paymentStatusLabel(order.payment_status))}</p><p><span>Delivery:</span> ${escapeHTML(deliveryStatusLabel(order.delivery_status))}</p><small class="customer-order-items">${(order.items||[]).map(item=>`${escapeHTML(item.product_name)} × ${item.quantity}`).join(", ")}</small><button type="button" class="text-button" data-action="view-order-payment" data-id="${escapeHTML(order.id)}">View order and payment <span>→</span></button>${feedback}</article>`;
+  }).join("");
 }
 async function loadCustomerOrders() {
   const customerId=state.session?.user?.id;
@@ -530,10 +542,101 @@ async function loadCustomerOrders() {
   }
   if(state.session?.user?.id!==customerId) return;
   state.customerOrders=data||[];
+  const deliveredOrderIds=state.customerOrders.filter(order=>order.delivery_status==="delivered").map(order=>order.id);
+  state.customerFeedbackOrderIds=new Set();
+  state.customerFeedbackError=false;
+  if(deliveredOrderIds.length) {
+    const {data:feedbackRows,error:feedbackError}=await state.supabase.from("store_customer_messages")
+      .select("order_id")
+      .eq("message_type","order_feedback")
+      .in("order_id",deliveredOrderIds);
+    if(feedbackError) {
+      console.error("Could not load customer order feedback status:",feedbackError);
+      state.customerFeedbackError=true;
+    } else {
+      state.customerFeedbackOrderIds=new Set(feedbackRows.map(row=>row.order_id));
+    }
+  }
+  if(state.session?.user?.id!==customerId) return;
   renderCustomerOrders();
 }
+function renderContactForm() {
+  const user=state.session?.user;
+  const nameInput=document.querySelector("#contact-form [name='name']");
+  const emailInput=document.querySelector("#contact-form [name='email']");
+  if(user&&nameInput&&!nameInput.value) {
+    const metadata=user.user_metadata||{};
+    nameInput.value=metadata.full_name||metadata.name||"";
+  }
+  if(user&&emailInput&&!emailInput.value) emailInput.value=user.email||"";
+}
+async function submitContactMessage(form) {
+  if(!state.supabase) {
+    setContactMessage("The contact service is unavailable. Please try again later.",true);
+    return;
+  }
+  const data=new FormData(form);
+  const button=form.querySelector("button[type='submit']");
+  button.disabled=true;
+  setContactMessage("Sending your message…");
+  try {
+    const {error}=await state.supabase.rpc("submit_store_contact_message",{
+      p_name:String(data.get("name")||"").trim(),
+      p_email:String(data.get("email")||"").trim(),
+      p_notes:String(data.get("notes")||"").trim()
+    });
+    if(error) {
+      console.error("Could not submit the contact message:",error);
+      setContactMessage("Your message could not be sent. Please try again later.",true);
+      return;
+    }
+    form.reset();
+    renderContactForm();
+    setContactMessage("Thanks for contacting us. Your message has been sent to the store.");
+  } catch(error) {
+    console.error("Contact message submission could not reach Supabase:",error);
+    setContactMessage("The contact service could not be reached. Check your connection and try again.",true);
+  } finally {
+    button.disabled=false;
+  }
+}
+function setContactMessage(message,isError=false) {
+  const element=document.getElementById("contact-form-status");
+  element.textContent=message;
+  element.hidden=!message;
+  element.classList.toggle("is-error",isError);
+}
+async function submitOrderFeedback(form) {
+  if(!state.supabase||!state.session?.user) {
+    showToast("Sign in again to send feedback for your order.");
+    return;
+  }
+  const orderId=form.dataset.orderFeedback;
+  const notes=String(new FormData(form).get("notes")||"").trim();
+  const button=form.querySelector("button[type='submit']");
+  button.disabled=true;
+  try {
+    const {error}=await state.supabase.rpc("submit_store_order_feedback",{
+      p_order_id:orderId,
+      p_notes:notes
+    });
+    if(error) {
+      console.error("Could not submit order feedback:",error);
+      showToast("Feedback could not be sent. Refresh your order history and try again.");
+      return;
+    }
+    state.customerFeedbackOrderIds.add(orderId);
+    renderCustomerOrders();
+    showToast("Thanks for your feedback.");
+  } catch(error) {
+    console.error("Order feedback submission could not reach Supabase:",error);
+    showToast("Feedback could not be sent. Check your connection and try again.");
+  } finally {
+    button.disabled=false;
+  }
+}
 function selectAdminSection(section) {
-  if(!state.adminAuthorized||!["products","general","orders"].includes(section)) return;
+  if(!state.adminAuthorized||!["products","general","orders","messages"].includes(section)) return;
   state.adminSection=section;
   document.querySelectorAll(".admin-tab").forEach(tab=>{
     const active=tab.dataset.adminSection===section;
@@ -546,6 +649,7 @@ function selectAdminSection(section) {
   if(section==="general") void loadStoreSettings(true);
   if(section==="general") applyStoreLogo(state.storeSettings.logo_path,state.storeSettings.logo_updated_at);
   if(section==="orders") void loadAdminOrders();
+  if(section==="messages") void loadAdminMessages();
 }
 async function loadStoreSettings(showError=false) {
   if(!state.supabase) return false;
@@ -632,6 +736,34 @@ async function loadAdminOrders(showNewOrderAlert=false) {
   state.knownAdminOrderIds=orderIds;
   state.adminOrders=data||[];
   renderAdminOrders();
+}
+async function loadAdminMessages() {
+  if(!state.adminAuthorized||!state.supabase) return;
+  const target=document.getElementById("admin-messages-list");
+  const {data,error}=await state.supabase.from("store_customer_messages")
+    .select("id,message_type,name,email,notes,order_id,created_at")
+    .order("created_at",{ascending:false});
+  if(error) {
+    console.error("Could not load customer messages:",error);
+    if(target) target.innerHTML=`<p class="admin-empty">Messages could not be loaded. Apply the customer messages migration, then refresh.</p>`;
+    return;
+  }
+  if(!state.adminAuthorized) return;
+  state.adminMessages=data||[];
+  renderAdminMessages();
+}
+function renderAdminMessages() {
+  const target=document.getElementById("admin-messages-list");
+  if(!target) return;
+  if(!state.adminMessages.length) {
+    target.innerHTML=`<p class="admin-empty">No contact messages or order feedback yet.</p>`;
+    return;
+  }
+  target.innerHTML=state.adminMessages.map(message=>{
+    const isFeedback=message.message_type==="order_feedback";
+    const relatedOrder=state.adminOrders.find(order=>order.id===message.order_id);
+    return `<article class="admin-message-card"><div class="admin-order-heading"><div><span class="eyebrow">${isFeedback?"ORDER FEEDBACK":"CONTACT MESSAGE"}</span><small>${new Date(message.created_at).toLocaleString("en-LK")}</small></div>${isFeedback&&relatedOrder?`<strong>${escapeHTML(relatedOrder.reference)}</strong>`:""}</div><div class="admin-message-identity"><strong>${escapeHTML(message.name)}</strong><a href="mailto:${escapeHTML(message.email)}">${escapeHTML(message.email)}</a></div><p>${escapeHTML(message.notes).replace(/\n/g,"<br>")}</p></article>`;
+  }).join("");
 }
 async function reviewStorePayment(orderId,approved) {
   if(!state.adminAuthorized||!window.confirm(approved?"Confirm you checked the payment receipt and the money arrived?":"Reject this payment and ask the customer to contact the store?")) return;
@@ -883,7 +1015,11 @@ async function updateAuthState(session) {
       await loadStoreData();
       await loadStoreSettings();
       await loadAdminOrders();
-      state.adminOrderPollTimer=setInterval(()=>{void loadAdminOrders(true);},30000);
+      await loadAdminMessages();
+      state.adminOrderPollTimer=setInterval(()=>{
+        void loadAdminOrders(true);
+        void loadAdminMessages();
+      },30000);
     } catch(error) {
       console.error("Could not load store management data:",error);
       state.storeLoaded=false;
@@ -1288,6 +1424,7 @@ document.addEventListener("click",event=>{
       break;
     case "refresh-customer-orders": void loadCustomerOrders();break;
     case "refresh-admin-orders": void loadAdminOrders();break;
+    case "refresh-admin-messages": void loadAdminMessages();break;
     case "customer-mark-paid": void markOrderPaymentSent();break;
     case "view-order-payment": viewCustomerOrder(target.dataset.id);break;
     case "review-payment": void reviewStorePayment(target.dataset.id,target.dataset.approved==="true");break;
@@ -1334,6 +1471,16 @@ document.querySelectorAll(".modal-backdrop").forEach(backdrop=>backdrop.addEvent
 document.getElementById("checkout-form").addEventListener("submit",event=>{
   event.preventDefault();
   void placeStoreOrder(event.currentTarget);
+});
+document.getElementById("contact-form").addEventListener("submit",event=>{
+  event.preventDefault();
+  void submitContactMessage(event.currentTarget);
+});
+document.getElementById("customer-orders-list").addEventListener("submit",event=>{
+  const form=event.target.closest(".order-feedback-form");
+  if(!form) return;
+  event.preventDefault();
+  void submitOrderFeedback(form);
 });
 document.getElementById("customer-auth-form").addEventListener("submit",async event=>{
   event.preventDefault();

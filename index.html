@@ -28,6 +28,7 @@
         <a href="#home" data-view="home" class="nav-link active">Home</a>
         <a href="#products" data-view="products" class="nav-link">Shop</a>
         <a href="#about" data-view="about" class="nav-link">About</a>
+        <a href="#contact" data-view="contact" class="nav-link">Contact</a>
         <a href="#admin" data-view="admin" class="nav-link admin-only" hidden>Store admin</a>
       </nav>
       <div class="header-actions">
@@ -162,6 +163,7 @@
           <button type="button" class="admin-tab is-active" data-admin-section="products">Products</button>
           <button type="button" class="admin-tab" data-admin-section="general">General settings</button>
           <button type="button" class="admin-tab" data-admin-section="orders">Orders <span id="admin-order-badge" hidden>0</span></button>
+          <button type="button" class="admin-tab" data-admin-section="messages">Messages</button>
         </nav>
         <div class="admin-layout" id="admin-layout" hidden>
           <section class="admin-section is-active" id="admin-products-section">
@@ -204,6 +206,13 @@
               <div class="orders-list" id="admin-orders-list"><p class="admin-empty">Loading customer orders…</p></div>
             </section>
           </section>
+          <section class="admin-section" id="admin-messages-section">
+            <section class="admin-card messages-card">
+              <div class="admin-card-heading"><div><div class="eyebrow">CUSTOMER INBOX</div><h2>Contact & feedback</h2></div><button class="button admin-signout" type="button" data-action="refresh-admin-messages">Refresh messages</button></div>
+              <p class="admin-hint">Contact form messages and feedback from delivered orders appear here. Reply to customers using their email address.</p>
+              <div class="admin-messages-list" id="admin-messages-list"><p class="admin-empty">Loading customer messages…</p></div>
+            </section>
+          </section>
         </div>
       </section>
 
@@ -214,6 +223,31 @@
           <div class="about-copy"><p>NEXON STORE LK is a Sri Lankan online store for useful, thoughtful finds across everyday categories. Browse for your home, your family, work, travel and the little things that make a day better.</p><p>Our collection grows with the things you’re looking for. Have a question or want to see something new in the shop? We’d love to hear from you.</p><a class="button button-primary whatsapp-link" href="https://wa.me/94722924522" target="_blank" rel="noreferrer">Chat with us on WhatsApp <span>↗</span></a></div>
         </div>
         <div class="about-values"><div><span>01</span><strong>Picked with purpose</strong><p>Thoughtful finds for your home, family and everyday.</p></div><div><span>02</span><strong>Here to help</strong><p>Friendly support when you need advice or a hand with an order.</p></div><div><span>03</span><strong>Made for Sri Lanka</strong><p>Local service and islandwide delivery for our community.</p></div></div>
+      </section>
+
+      <section class="view contact-view" id="contact-view" hidden>
+        <div class="page-banner contact-banner"><div class="eyebrow">WE’RE HERE TO HELP</div><h1>Get in <span>touch.</span></h1><p>Questions about an order or a product? Send us a message and our store team will get back to you.</p></div>
+        <div class="contact-layout">
+          <section class="contact-card">
+            <div class="eyebrow">CONTACT THE STORE</div>
+            <h2>How can we help?</h2>
+            <p>Your name, email address and message will be sent securely to the store team.</p>
+            <p id="contact-form-status" class="contact-form-status" role="status" aria-live="polite" hidden></p>
+            <form class="contact-form" id="contact-form">
+              <label for="contact-name">Name<input id="contact-name" name="name" type="text" maxlength="100" autocomplete="name" required></label>
+              <label for="contact-email">Email address<input id="contact-email" name="email" type="email" maxlength="254" autocomplete="email" required></label>
+              <label for="contact-notes">Notes / message<textarea id="contact-notes" name="notes" maxlength="2000" rows="6" placeholder="Tell us how we can help." required></textarea></label>
+              <button class="button button-primary full-width" type="submit">Send message <span>→</span></button>
+            </form>
+          </section>
+          <aside class="contact-card contact-details">
+            <div class="eyebrow">OTHER WAYS TO REACH US</div>
+            <h2>We’re happy to help.</h2>
+            <p>For quick help with an order, message us directly on WhatsApp.</p>
+            <a class="button button-primary full-width" href="https://wa.me/94722924522" target="_blank" rel="noreferrer">WhatsApp: +94 72 292 4522 <span>↗</span></a>
+            <small>Islandwide, Sri Lanka</small>
+          </aside>
+        </div>
       </section>
 
       <section class="view cart-view" id="cart-view" hidden>
@@ -254,7 +288,7 @@
     <footer class="site-footer">
       <div class="footer-main">
       <div class="footer-brand"><a class="brand" href="#home" data-view="home"><img class="store-logo" src="assets/nexon-logo.png" alt=""><span class="brand-copy"><strong>NEXON</strong><small>STORE LK</small></span></a><p>Good finds for every day.</p></div>
-      <div><strong class="footer-title">Explore</strong><a href="#home" data-view="home">Home</a><a href="#products" data-view="products">Shop all products</a><a href="#about" data-view="about">About us</a><a href="#admin" data-view="admin" class="admin-only" hidden>Store admin</a></div>
+      <div><strong class="footer-title">Explore</strong><a href="#home" data-view="home">Home</a><a href="#products" data-view="products">Shop all products</a><a href="#about" data-view="about">About us</a><a href="#contact" data-view="contact">Contact</a><a href="#admin" data-view="admin" class="admin-only" hidden>Store admin</a></div>
         <div><strong class="footer-title">Need a hand?</strong><a href="https://wa.me/94722924522" target="_blank" rel="noreferrer">WhatsApp: +94 72 292 4522</a><span>Islandwide, Sri Lanka</span></div>
       </div>
       <div class="footer-bottom"><span>© <span id="year"></span> NEXON STORE LK. Good finds for every day.</span><span>Payments verified manually by the store</span></div>
