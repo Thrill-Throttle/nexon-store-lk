@@ -83,18 +83,20 @@ function setAdminLinksVisible(visible) {
 function updateAccountButton(session) {
   const button=document.querySelector(".account-button");
   const label=document.getElementById("account-label");
-  const email=session?.user?.email;
-  const signedIn=Boolean(session?.user);
+  const user=session?.user;
+  const email=user?.email;
+  const signedIn=Boolean(user);
+  const metadata=user?.user_metadata||{};
+  const displayName=String(metadata.full_name||metadata.name||email?.split("@")[0]||"").trim();
+  const initial=displayName.charAt(0).toUpperCase();
   button.classList.toggle("is-signed-in",signedIn);
   label.textContent=signedIn?"My profile":"Sign in";
   button.setAttribute("aria-label",signedIn?`Signed in as ${email||"your account"}. Open your profile.`:"Sign in");
   button.title=signedIn?email||"Open your profile":"Sign in";
-  button.querySelector(".user-icon").textContent=signedIn?(email?.trim().charAt(0).toUpperCase()||"♙"):"♙";
+  button.querySelector(".user-icon").textContent=signedIn?(initial||"♙"):"♙";
   const avatar=button.querySelector(".account-avatar");
-  const avatarUrl=session?.user?.user_metadata?.avatar_url||session?.user?.user_metadata?.picture||"";
-  const safeAvatarUrl=/^https:\/\/[^\s"'<>]+$/i.test(avatarUrl);
-  avatar.hidden=!signedIn||!safeAvatarUrl;
-  avatar.src=signedIn&&safeAvatarUrl?avatarUrl:"";
+  avatar.hidden=true;
+  avatar.removeAttribute("src");
 }
 function setView(requestedView) {
   let view=requestedView;
@@ -387,18 +389,11 @@ function renderProfile() {
   const email=user.email||"";
   const fullName=String(metadata.full_name||metadata.name||email.split("@")[0]||"Your profile").trim();
   const firstName=fullName.split(/\s+/)[0]||"back";
-  const avatarUrl=metadata.avatar_url||metadata.picture||"";
-  const avatar=document.getElementById("profile-avatar");
-  const safeAvatarUrl=/^https:\/\/[^\s"'<>]+$/i.test(avatarUrl);
   document.getElementById("profile-first-name").textContent=`${firstName}.`;
   document.getElementById("profile-name").textContent=fullName;
   document.getElementById("profile-email").textContent=email;
   const initials=document.getElementById("profile-initials");
   initials.textContent=firstName.slice(0,1).toUpperCase();
-  initials.hidden=safeAvatarUrl;
-  avatar.hidden=!safeAvatarUrl;
-  avatar.onerror=()=>{avatar.hidden=true;initials.hidden=false;};
-  avatar.src=safeAvatarUrl?avatarUrl:"";
   document.getElementById("profile-admin-card").hidden=!state.adminAuthorized;
   updateCartBadge();
 }
