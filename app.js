@@ -16,6 +16,7 @@ const state = {
   category:"All",
   search:"",
   currentView:"home",
+  adminSection:"products",
   activeProduct:null,
   editingProduct:null,
   order:null,
@@ -30,7 +31,15 @@ const state = {
   catalogIsDemo:true,
   catalogDraft:null,
   catalogDraftError:false,
+  storeSettings:{delivery_fee_lkr:0},
+  customerOrders:[],
+  adminOrders:[],
+  knownAdminOrderIds:null,
+  adminOrderPollTimer:null,
+  currentOrder:null,
+  isLoadingOrders:false,
   pendingAdminRoute:false,
+  pendingAuthView:null,
   adminMessage:"Preparing Google sign-in…"
 };
 const lkr = new Intl.NumberFormat("en-LK",{style:"currency",currency:"LKR",maximumFractionDigits:0});
@@ -82,14 +91,29 @@ function updateAccountButton(session) {
   button.title=signedIn?email||"Open your profile":"Sign in";
   button.querySelector(".user-icon").textContent=signedIn?(email?.trim().charAt(0).toUpperCase()||"♙"):"♙";
   const avatar=button.querySelector(".account-avatar");
-  const avatarUrl=session?.user?.user_metadata?.avatar_url||session?.user?.user_metadata?.picture;
-  avatar.hidden=!signedIn||!avatarUrl;
-  avatar.src=signedIn&&avatarUrl?avatarUrl:"";
+  const avatarUrl=session?.user?.user_metadata?.avatar_url||session?.user?.user_metadata?.picture||"";
+  const safeAvatarUrl=/^https:\/\/[^\s"'<>]+$/i.test(avatarUrl);
+  avatar.hidden=!signedIn||!safeAvatarUrl;
+  avatar.src=signedIn&&safeAvatarUrl?avatarUrl:"";
 }
 function setView(requestedView) {
   let view=requestedView;
-  if(view==="profile"&&!state.adminAuthorized) view="admin-login";
-  if(view==="admin"&&!state.adminAuthorized) view="admin-login";
+  if(view==="profile"&&!state.session?.user) {
+    state.pendingAuthView="profile";
+    view="admin-login";
+  }
+  if(view==="checkout"&&!state.session?.user) {
+    state.pendingAuthView="checkout";
+    state.adminMessage="Sign in with Google to save your checkout and track your orders.";
+    view="admin-login";
+  }
+  if(view==="admin"&&!state.adminAuthorized) {
+    if(state.session?.user) view="profile";
+    else {
+      state.pendingAuthView="admin";
+      view="admin-login";
+    }
+  }
   if(!views.includes(view)) return;
   closeModals();
   state.currentView=view;
@@ -98,8 +122,9 @@ function setView(requestedView) {
   document.querySelector(".main-nav").classList.remove("open");
   document.querySelector(".menu-toggle").setAttribute("aria-expanded","false");
   if(view==="products") renderCatalog();
-  if(view==="profile"&&state.adminAuthorized) renderProfile();
+  if(view==="profile"&&state.session?.user) renderProfile();
   if(view==="admin"&&state.adminAuthorized) renderAdmin();
+  if(view==="profile"&&state.session?.user) void loadCustomerOrders();
   if(view==="cart") renderCart();
   if(view==="checkout") renderCheckout();
   if(view==="payment") renderPayment();
@@ -192,8 +217,8 @@ function removeFromCart(id) {
 function renderSummary(targetId) {
   const target=document.getElementById(targetId);
   if(!target) return;
-  const count=cartCount(),subtotal=cartSubtotal();
-  target.innerHTML=`<h2>Order summary</h2><div class="summary-line"><span>Items (${count})</span><strong>${lkr.format(subtotal)}</strong></div><div class="summary-line"><span>Delivery</span><strong>Calculated when the store is live</strong></div><div class="summary-line total"><span>Subtotal</span><strong>${lkr.format(subtotal)}</strong></div><p class="summary-note">Delivery rates will be confirmed by the store. This preview does not submit or save orders.</p>${state.currentView==="cart"?`<button class="button button-primary full-width" type="button" data-action="checkout" ${count===0?"disabled":""}>Continue to checkout <span>→</span></button><button class="text-button continue-shopping full-width" type="button" data-view="products">Continue shopping</button>`:""}`;
+  const count=cartCount(),subtotal=cartSubtotal(),fee=Number(state.storeSettings.delivery_fee_lkr)||0;
+  target.innerHTML=`<h2>Order summary</h2><div class="summary-line"><span>Items (${count})</span><strong>${lkr.format(subtotal)}</strong></div><div class="summary-line"><span>Delivery</span><strong>${fee===0?"Free":lkr.format(fee)}</strong></div><div class="summary-line total"><span>Total</span><strong>${lkr.format(subtotal+fee)}</strong></div><p class="summary-note">Payment is reviewed manually after you send your receipt on WhatsApp.</p>${state.currentView==="cart"?`<button class="button button-primary full-width" type="button" data-action="checkout" ${count===0?"disabled":""}>Continue to checkout <span>→</span></button><button class="text-button continue-shopping full-width" type="button" data-view="products">Continue shopping</button>`:""}`;
 }
 function renderCart() {
   const target=document.getElementById("cart-items"),entries=getCartEntries();
@@ -207,13 +232,96 @@ function renderCart() {
   ).join("");
   renderSummary("cart-summary");
 }
-function renderCheckout() {renderSummary("checkout-summary");}
+function renderCheckout() {
+  renderSummary("checkout-summary");
+  const metadata=state.session?.user?.user_metadata||{};
+  const nameInput=document.querySelector("#checkout-form [name=\"name\"]");
+  const emailInput=document.querySelector("#checkout-form [name=\"email\"]");
+  if(nameInput&&!nameInput.value) nameInput.value=metadata.full_name||metadata.name||"";
+  if(emailInput) {
+    emailInput.value=state.session?.user?.email||"";
+    emailInput.readOnly=true;
+  }
+}
 function renderPayment() {
-  if(!state.order) return;
-  document.getElementById("payment-reference").textContent=state.order.reference;
-  document.getElementById("payment-total").textContent=lkr.format(state.order.total);
-  const text=`Hi NEXON STORE, this is a payment receipt for my demo preview only. Reference: ${state.order.reference}. Customer: ${state.order.name}. Preview total: ${lkr.format(state.order.total)}. Please note: this is not a real order.`;
-  document.querySelector(".whatsapp-receipt").href=`https://wa.me/94722924522?text=${encodeURIComponent(text)}`;
+  if(!state.currentOrder) return;
+  const order=state.currentOrder;
+  document.getElementById("payment-order-reference").textContent=order.reference;
+  document.getElementById("payment-reference").textContent=order.reference;
+  document.getElementById("payment-total").textContent=lkr.format(order.total_lkr);
+  document.getElementById("payment-status-message").textContent=paymentStatusLabel(order.payment_status);
+  const markPaidButton=document.getElementById("customer-mark-paid");
+  markPaidButton.hidden=order.payment_status==="awaiting_approval"||order.payment_status==="approved";
+  const receiptLink=document.getElementById("whatsapp-receipt");
+  receiptLink.hidden=order.payment_status==="approved";
+  const text=`Hi NEXON STORE, I have paid for order ${order.reference}. Amount: ${lkr.format(order.total_lkr)}. I will attach my payment receipt for verification.`;
+  receiptLink.href=`https://wa.me/94722924522?text=${encodeURIComponent(text)}`;
+}
+async function placeStoreOrder(form) {
+  if(!state.session?.user||!state.supabase) {
+    state.pendingAuthView="checkout";
+    setView("admin-login");
+    return;
+  }
+  const entries=getCartEntries();
+  if(!entries.length) {showToast("Your cart is empty.");setView("cart");return;}
+  const data=new FormData(form);
+  const {data:orderRows,error}=await state.supabase.rpc("create_store_order",{
+    p_customer_name:String(data.get("name")||"").trim(),
+    p_customer_phone:String(data.get("phone")||"").trim(),
+    p_delivery_address:String(data.get("address")||"").trim(),
+    p_delivery_city:String(data.get("city")||"").trim(),
+    p_delivery_district:String(data.get("district")||"").trim(),
+    p_delivery_instructions:String(data.get("instructions")||"").trim(),
+    p_items:entries.map(({product,qty})=>({product_id:product.id,quantity:qty}))
+  });
+  if(error) {
+    console.error("Could not create customer order:",error);
+    showToast(error.message?.includes("awaiting payment")
+      ?"You already have an order waiting for payment. Check your profile first."
+      :"The order could not be placed. Refresh your cart and try again.");
+    return;
+  }
+  const savedOrder=Array.isArray(orderRows)?orderRows[0]:orderRows;
+  if(!savedOrder?.order_id||!savedOrder?.order_reference) {
+    console.error("Order creation returned an invalid response:",orderRows);
+    showToast("The order could not be confirmed. Check your profile before trying again.");
+    return;
+  }
+  const {data:createdOrder,error:readError}=await state.supabase.from("store_orders")
+    .select("id,reference,total_lkr,payment_status,delivery_status,created_at")
+    .eq("id",savedOrder.order_id).single();
+  if(readError) {
+    console.error("Order was created but could not be loaded:",readError);
+    showToast("Your order was saved. Refresh your profile to see its payment details.");
+    return;
+  }
+  state.currentOrder=createdOrder;
+  state.cart={};
+  saveCart();
+  updateCartBadge();
+  await loadCustomerOrders();
+  setView("payment");
+}
+async function markOrderPaymentSent() {
+  const order=state.currentOrder;
+  if(!order||!state.supabase||!["awaiting_payment","rejected"].includes(order.payment_status)) return;
+  const {error}=await state.supabase.rpc("customer_mark_payment_sent",{p_order_id:order.id});
+  if(error) {
+    console.error("Could not notify the store that a payment was sent:",error);
+    showToast("Your payment notification could not be saved. Please retry.");
+    return;
+  }
+  state.currentOrder={...order,payment_status:"awaiting_approval"};
+  renderPayment();
+  await loadCustomerOrders();
+  showToast("Payment notification sent. Now send the receipt to WhatsApp.");
+}
+function viewCustomerOrder(orderId) {
+  const order=state.customerOrders.find(item=>item.id===orderId);
+  if(!order) return;
+  state.currentOrder=order;
+  setView("payment");
 }
 function openProduct(id) {
   const product=getProduct(id);
@@ -247,6 +355,7 @@ function renderAdmin() {
   document.getElementById("admin-account-email").textContent=state.session.user.email||"";
   document.getElementById("admin-layout").hidden=!state.storeLoaded;
   if(!state.storeLoaded) return;
+  selectAdminSection(state.adminSection);
   const draftBar=document.getElementById("admin-draft-bar");
   const draftMessage=document.getElementById("admin-draft-message");
   const draftActions=document.getElementById("admin-draft-actions");
@@ -273,7 +382,7 @@ function renderAdmin() {
 }
 function renderProfile() {
   const user=state.session?.user;
-  if(!user||!state.adminAuthorized) return;
+  if(!user) return;
   const metadata=user.user_metadata||{};
   const email=user.email||"";
   const fullName=String(metadata.full_name||metadata.name||email.split("@")[0]||"Your profile").trim();
@@ -292,6 +401,170 @@ function renderProfile() {
   avatar.src=safeAvatarUrl?avatarUrl:"";
   document.getElementById("profile-admin-card").hidden=!state.adminAuthorized;
   updateCartBadge();
+}
+const paymentStatusLabels={
+  awaiting_payment:"Waiting for payment",
+  awaiting_approval:"Waiting for payment approval",
+  approved:"Payment approved",
+  rejected:"Payment not approved"
+};
+const deliveryStatusLabels={
+  product_packed:"Product Packed",
+  waiting_for_shipment:"Waiting for shipment",
+  handed_to_delivery:"Handed to delivery",
+  out_for_delivery:"Out for delivery",
+  delivered:"Delivered"
+};
+function paymentStatusLabel(status) { return paymentStatusLabels[status]||"Order status unavailable"; }
+function deliveryStatusLabel(status) { return deliveryStatusLabels[status]||"Not started"; }
+function renderCustomerOrders() {
+  const target=document.getElementById("customer-orders-list");
+  if(!target) return;
+  if(!state.customerOrders.length) {
+    target.innerHTML=`<p class="profile-note">You have no orders yet. Orders you place will appear here.</p>`;
+    return;
+  }
+  target.innerHTML=state.customerOrders.map(order=>
+    `<article class="customer-order-card"><div class="customer-order-heading"><div><strong>${escapeHTML(order.reference)}</strong><small>${new Date(order.created_at).toLocaleDateString("en-LK",{year:"numeric",month:"short",day:"numeric"})}</small></div><strong>${lkr.format(order.total_lkr)}</strong></div><p><span>Payment:</span> ${escapeHTML(paymentStatusLabel(order.payment_status))}</p><p><span>Delivery:</span> ${escapeHTML(deliveryStatusLabel(order.delivery_status))}</p><small class="customer-order-items">${(order.items||[]).map(item=>`${escapeHTML(item.product_name)} × ${item.quantity}`).join(", ")}</small><button type="button" class="text-button" data-action="view-order-payment" data-id="${escapeHTML(order.id)}">View order and payment <span>→</span></button></article>`
+  ).join("");
+}
+async function loadCustomerOrders() {
+  const customerId=state.session?.user?.id;
+  if(!state.supabase||!customerId) return;
+  const target=document.getElementById("customer-orders-list");
+  if(target) target.innerHTML=`<p class="profile-note">Loading your orders…</p>`;
+  const {data,error}=await state.supabase.from("store_orders")
+    .select("id,reference,customer_name,customer_email,customer_phone,delivery_address,delivery_city,delivery_district,delivery_instructions,subtotal_lkr,delivery_fee_lkr,total_lkr,payment_status,delivery_status,created_at,items:store_order_items(id,product_name,product_image,quantity,unit_price_lkr,line_total_lkr)")
+    .eq("customer_id",customerId)
+    .order("created_at",{ascending:false});
+  if(error) {
+    console.error("Could not load customer orders:",error);
+    if(target) target.innerHTML=`<p class="profile-note is-error">Order history could not be loaded. Apply the orders database migration and try again.</p>`;
+    return;
+  }
+  if(state.session?.user?.id!==customerId) return;
+  state.customerOrders=data||[];
+  renderCustomerOrders();
+}
+function selectAdminSection(section) {
+  if(!state.adminAuthorized||!["products","general","orders"].includes(section)) return;
+  state.adminSection=section;
+  document.querySelectorAll(".admin-tab").forEach(tab=>{
+    const active=tab.dataset.adminSection===section;
+    tab.classList.toggle("is-active",active);
+    tab.setAttribute("aria-current",active?"page":"false");
+  });
+  document.querySelectorAll(".admin-section").forEach(page=>{
+    page.classList.toggle("is-active",page.id===`admin-${section}-section`);
+  });
+  if(section==="general") void loadStoreSettings(true);
+  if(section==="orders") void loadAdminOrders();
+}
+async function loadStoreSettings(showError=false) {
+  if(!state.supabase) return;
+  const status=document.getElementById("delivery-fee-status");
+  const {data,error}=await state.supabase.from("store_settings").select("delivery_fee_lkr").eq("id",true).single();
+  if(error) {
+    console.error("Could not load store delivery settings:",error);
+    if(status) status.textContent="Store settings could not be loaded. Apply the orders and settings migration.";
+    if(showError) showAdminFeedback("Store delivery settings could not be loaded. Check the Supabase migration and connection.",true);
+    return;
+  }
+  state.storeSettings=data;
+  const input=document.getElementById("delivery-fee");
+  if(input) input.value=String(data.delivery_fee_lkr);
+  if(status) status.textContent=`Current fee: ${data.delivery_fee_lkr===0?"Free":lkr.format(data.delivery_fee_lkr)}.`;
+  if(state.currentView==="cart") renderCart();
+  if(state.currentView==="checkout") renderCheckout();
+}
+async function saveDeliveryFee(form) {
+  if(!state.adminAuthorized||!state.supabase) return;
+  const fee=Number(new FormData(form).get("deliveryFee"));
+  if(!Number.isSafeInteger(fee)||fee<0||fee>1000000) {
+    showAdminFeedback("Enter a delivery fee between LKR 0 and LKR 1,000,000.",true);
+    return;
+  }
+  const {error}=await state.supabase.rpc("admin_update_store_settings",{p_delivery_fee_lkr:fee});
+  if(error) {
+    console.error("Could not save store delivery settings:",error);
+    showAdminFeedback("Delivery fee could not be saved. Apply the orders and settings migration, then try again.",true);
+    return;
+  }
+  state.storeSettings={delivery_fee_lkr:fee};
+  const status=document.getElementById("delivery-fee-status");
+  status.textContent=`Delivery fee saved: ${fee===0?"Free":lkr.format(fee)}. New orders will use this fee.`;
+  showAdminFeedback("Delivery fee updated. Existing orders keep their original fee.");
+}
+function renderAdminOrders() {
+  const target=document.getElementById("admin-orders-list");
+  if(!target) return;
+  const pendingCount=state.adminOrders.filter(order=>order.payment_status==="awaiting_approval").length;
+  const badge=document.getElementById("admin-order-badge");
+  badge.textContent=String(pendingCount);
+  badge.hidden=pendingCount===0;
+  if(!state.adminOrders.length) {
+    target.innerHTML=`<p class="admin-empty">No customer orders yet.</p>`;
+    return;
+  }
+  target.innerHTML=state.adminOrders.map(order=>{
+    const items=(order.items||[]).map(item=>`${escapeHTML(item.product_name)} × ${item.quantity}`).join(", ");
+    const paymentActions=order.payment_status==="awaiting_approval"
+      ?`<div class="order-actions"><button class="button button-primary" type="button" data-action="review-payment" data-id="${escapeHTML(order.id)}" data-approved="true">Approve payment</button><button class="button order-reject-button" type="button" data-action="review-payment" data-id="${escapeHTML(order.id)}" data-approved="false">Reject</button></div>`
+      :"";
+    const nextDelivery={
+      product_packed:"waiting_for_shipment",
+      waiting_for_shipment:"handed_to_delivery",
+      handed_to_delivery:"out_for_delivery",
+      out_for_delivery:"delivered"
+    }[order.delivery_status];
+    const deliveryAction=order.payment_status==="approved"&&nextDelivery
+      ?`<button class="button button-primary" type="button" data-action="advance-delivery" data-id="${escapeHTML(order.id)}" data-status="${nextDelivery}">Mark ${escapeHTML(deliveryStatusLabel(nextDelivery))}</button>`
+      :"";
+    return `<article class="admin-order-card"><div class="admin-order-heading"><div><span class="eyebrow">ORDER</span><h3>${escapeHTML(order.reference)}</h3><small>${new Date(order.created_at).toLocaleString("en-LK")}</small></div><strong>${lkr.format(order.total_lkr)}</strong></div><div class="admin-order-grid"><div><span>Customer</span><strong>${escapeHTML(order.customer_name)}</strong><a href="mailto:${escapeHTML(order.customer_email)}">${escapeHTML(order.customer_email)}</a><a href="tel:${escapeHTML(order.customer_phone)}">${escapeHTML(order.customer_phone)}</a></div><div><span>Delivery address</span><strong>${escapeHTML(order.delivery_address)}</strong><small>${escapeHTML(order.delivery_city)}, ${escapeHTML(order.delivery_district)}</small>${order.delivery_instructions?`<small>Note: ${escapeHTML(order.delivery_instructions)}</small>`:""}</div></div><p class="admin-order-items">${items}</p><div class="admin-order-statuses"><span>Payment: <strong>${escapeHTML(paymentStatusLabel(order.payment_status))}</strong></span><span>Delivery: <strong>${escapeHTML(deliveryStatusLabel(order.delivery_status))}</strong></span><span>Delivery fee: <strong>${lkr.format(order.delivery_fee_lkr)}</strong></span></div>${paymentActions||deliveryAction?`<div class="order-actions">${paymentActions}${deliveryAction}</div>`:""}</article>`;
+  }).join("");
+}
+async function loadAdminOrders(showNewOrderAlert=false) {
+  if(!state.adminAuthorized||!state.supabase) return;
+  const target=document.getElementById("admin-orders-list");
+  const {data,error}=await state.supabase.from("store_orders")
+    .select("id,reference,customer_name,customer_email,customer_phone,delivery_address,delivery_city,delivery_district,delivery_instructions,subtotal_lkr,delivery_fee_lkr,total_lkr,payment_status,delivery_status,created_at,items:store_order_items(id,product_name,product_image,quantity,unit_price_lkr,line_total_lkr)")
+    .order("created_at",{ascending:false});
+  if(error) {
+    console.error("Could not load store orders:",error);
+    if(target) target.innerHTML=`<p class="admin-empty">Orders could not be loaded. Apply the orders and settings migration, then refresh.</p>`;
+    return;
+  }
+  if(!state.adminAuthorized) return;
+  const orderIds=new Set(data.map(order=>order.id));
+  if(showNewOrderAlert&&state.knownAdminOrderIds) {
+    const newOrders=data.filter(order=>!state.knownAdminOrderIds.has(order.id));
+    if(newOrders.length) showToast(`${newOrders.length} new customer ${newOrders.length===1?"order":"orders"} received.`);
+  }
+  state.knownAdminOrderIds=orderIds;
+  state.adminOrders=data||[];
+  renderAdminOrders();
+}
+async function reviewStorePayment(orderId,approved) {
+  if(!state.adminAuthorized||!window.confirm(approved?"Confirm you checked the payment receipt and the money arrived?":"Reject this payment and ask the customer to contact the store?")) return;
+  const {error}=await state.supabase.rpc("admin_review_store_payment",{p_order_id:orderId,p_approved:approved});
+  if(error) {
+    console.error("Could not update the order payment status:",error);
+    showAdminFeedback("Payment status could not be updated. Refresh the orders list and try again.",true);
+    return;
+  }
+  await loadAdminOrders();
+  showAdminFeedback(approved?"Payment approved; delivery starts at Product Packed.":"Payment marked as rejected.");
+}
+async function advanceDeliveryStatus(orderId,status) {
+  if(!state.adminAuthorized) return;
+  const {error}=await state.supabase.rpc("admin_update_store_delivery_status",{p_order_id:orderId,p_delivery_status:status});
+  if(error) {
+    console.error("Could not update the order delivery status:",error);
+    showAdminFeedback("Delivery status could not be updated. Refresh the orders list and try again.",true);
+    return;
+  }
+  await loadAdminOrders();
+  showAdminFeedback(`Order delivery updated: ${deliveryStatusLabel(status)}.`);
 }
 
 async function loadStoreData() {
@@ -472,21 +745,27 @@ async function updateAuthState(session) {
   state.authReady=false;
   setAdminLinksVisible(false);
   document.getElementById("admin-layout").hidden=true;
+  if(state.adminOrderPollTimer) {
+    clearInterval(state.adminOrderPollTimer);
+    state.adminOrderPollTimer=null;
+  }
   if(!session?.user) {
     state.authReady=true;
     state.adminMessage=state.supabase
-      ?"Sign in with the approved Google account to continue. Only authorized Google accounts can access store management."
+      ?"Sign in with Google to manage your account and track orders. Store admin access is restricted."
       :"Secure Google sign-in is not configured yet. Complete the setup steps in README.md.";
-    if(state.pendingAdminRoute) {state.pendingAdminRoute=false;setView("admin-login");}
+    if(state.pendingAdminRoute) {state.pendingAdminRoute=false;state.pendingAuthView="admin";setView("admin-login");}
+    else if(state.pendingAuthView) setView("admin-login");
     else if(state.currentView==="admin") setView("admin-login");
     else if(state.currentView==="admin-login") renderAdminLogin();
+    else if(state.currentView==="profile"||state.currentView==="checkout") setView("admin-login");
     return;
   }
   if(!isGoogleAccount(session.user)) {
     state.authReady=true;
-    state.adminMessage="Access denied. This Google account is not authorized to manage the store.";
+    state.adminMessage="Use a Google account to sign in.";
     setAdminLinksVisible(false);
-    if(state.pendingAdminRoute||state.currentView==="admin-login"||state.currentView==="admin") {
+    if(state.pendingAdminRoute||state.currentView==="admin-login"||state.currentView==="admin"||state.currentView==="profile"||state.currentView==="checkout") {
       state.pendingAdminRoute=false;
       if(state.currentView!=="admin-login") setView("admin-login");
       else renderAdminLogin();
@@ -500,7 +779,7 @@ async function updateAuthState(session) {
     console.error("Secure store administrator role check could not reach the database:",error);
     state.authReady=true;
     state.adminMessage="Secure admin access could not be verified. Check the database connection and try again.";
-    if(state.currentView==="admin") setView("admin-login");
+    if(state.currentView==="admin") setView("profile");
     else renderAdminLogin();
     return;
   }
@@ -510,38 +789,50 @@ async function updateAuthState(session) {
     console.error("Secure store administrator role check failed:",roleError);
     state.authReady=true;
     state.adminMessage="Secure admin access could not be verified. Contact the store administrator.";
-    if(state.currentView==="admin") setView("admin-login");
+    if(state.currentView==="admin") setView("profile");
     else renderAdminLogin();
     return;
   }
-  if(hasAdminRole!==true) {
-    state.authReady=true;
-    state.adminMessage="Access denied. This Google account does not have the verified administrator role.";
-    if(state.currentView==="admin") setView("admin-login");
-    else renderAdminLogin();
-    return;
-  }
-  state.adminAuthorized=true;
+  state.adminAuthorized=hasAdminRole===true;
   state.authReady=true;
-  state.adminMessage=`Verified administrator: ${session.user.email}`;
-  setAdminLinksVisible(true);
-  try {
-    state.storeLoaded=false;
-    await loadStoreData();
-  } catch(error) {
-    console.error("Could not load store management data:",error);
-    state.storeLoaded=false;
-    showAdminFeedback("Store data could not be loaded. Check the Supabase database migration and connection, then retry.",true);
+  state.adminMessage=state.adminAuthorized
+    ?`Verified administrator: ${session.user.email}`
+    :`Signed in as ${session.user.email||"Google account"}.`;
+  setAdminLinksVisible(state.adminAuthorized);
+  if(state.adminAuthorized) {
+    try {
+      state.storeLoaded=false;
+      await loadStoreData();
+      await loadStoreSettings();
+      await loadAdminOrders();
+      state.adminOrderPollTimer=setInterval(()=>{void loadAdminOrders(true);},30000);
+    } catch(error) {
+      console.error("Could not load store management data:",error);
+      state.storeLoaded=false;
+      showAdminFeedback("Store data could not be loaded. Check the Supabase database migration and connection, then retry.",true);
+    }
+  } else {
+    await loadCustomerOrders();
   }
+  if(errorRoleChanged(session)) return;
   if(state.pendingAdminRoute) {
     state.pendingAdminRoute=false;
-    setView("admin");
+    if(state.adminAuthorized) setView("admin");
+    else {
+      state.pendingAuthView=null;
+      setView("profile");
+      showToast("Store administration is available only to the approved admin account.");
+    }
+  } else if(state.pendingAuthView) {
+    const requested=state.pendingAuthView;
+    state.pendingAuthView=null;
+    setView(requested==="admin"&&!state.adminAuthorized?"profile":requested);
   } else if(state.currentView==="admin-login") {
+    setView(state.adminAuthorized?"profile":"profile");
+  } else if(state.currentView==="admin"&&!state.adminAuthorized) {
     setView("profile");
   } else if(state.currentView==="profile") {
     renderProfile();
-  } else {
-    renderAdminLogin();
   }
 }
 function errorRoleChanged(session) {
@@ -598,24 +889,26 @@ async function initializeAuth() {
     renderCatalog();
     showToast("The store catalog is temporarily unavailable.");
   }
+  await loadStoreSettings();
   await updateAuthState(data.session);
 }
-async function startAdminGoogleLogin() {
+async function startGoogleLogin() {
   if(!state.supabase) {setAdminMessage("Secure Google sign-in is not configured. Follow the Supabase setup instructions in README.md.",true);renderAdminLogin();return;}
   setAdminMessage("Redirecting to Google for secure sign-in…");
-  const redirectTo=`${location.origin}${location.pathname}#profile`;
+  const returnView=state.pendingAuthView||"profile";
+  const redirectTo=`${location.origin}${location.pathname}#${returnView}`;
   let result;
   try {
     result=await state.supabase.auth.signInWithOAuth({provider:"google",options:{redirectTo,scopes:"openid email profile",queryParams:{prompt:"select_account"}}});
   } catch(error) {
-    console.error("Google administrator sign-in could not reach Supabase:",error);
+    console.error("Google sign-in could not reach Supabase:",error);
     setAdminMessage("Google sign-in could not start. Check your network and the OAuth configuration.",true);
     renderAdminLogin();
     return;
   }
   const {error}=result;
   if(error) {
-    console.error("Google administrator sign-in failed:",error);
+    console.error("Google sign-in failed:",error);
     setAdminMessage("Google sign-in could not start. Check the Google and Supabase OAuth configuration.",true);
     renderAdminLogin();
   }
@@ -626,14 +919,14 @@ async function signOutAdmin() {
   try {
     result=await state.supabase.auth.signOut();
   } catch(error) {
-    console.error("Administrator sign-out could not reach Supabase:",error);
-    showAdminFeedback("Sign-out failed because the authentication server could not be reached. Please retry.",true);
+    console.error("Account sign-out could not reach Supabase:",error);
+    showToast("Sign-out failed because the authentication server could not be reached. Please retry.");
     return;
   }
   const {error}=result;
   if(error) {
-    console.error("Could not sign out of the administrator account:",error);
-    showAdminFeedback("Sign-out failed. Please retry.",true);
+    console.error("Could not sign out of the account:",error);
+    showToast("Sign-out failed. Please retry.");
     return;
   }
   state.session=null;
@@ -875,7 +1168,7 @@ document.addEventListener("click",event=>{
     case "remove": removeFromCart(target.dataset.id);break;
     case "checkout": if(cartCount()) setView("checkout");break;
     case "login":
-      if(state.session?.user) setView(state.adminAuthorized?"profile":"admin-login");
+      if(state.session?.user) setView("profile");
       else document.getElementById("login-modal").hidden=false;
       break;
     case "close-modal": closeModals();break;
@@ -887,7 +1180,18 @@ document.addEventListener("click",event=>{
     case "publish-catalog": void publishCatalogDraft();break;
     case "discard-catalog": void discardCatalogDraft();break;
     case "cancel-product-edit": resetProductForm();break;
-    case "admin-google-login": void startAdminGoogleLogin();break;
+    case "admin-google-login": void startGoogleLogin();break;
+    case "customer-google-login":
+      state.pendingAuthView=state.pendingAuthView||"profile";
+      setView("admin-login");
+      void startGoogleLogin();
+      break;
+    case "refresh-customer-orders": void loadCustomerOrders();break;
+    case "refresh-admin-orders": void loadAdminOrders();break;
+    case "customer-mark-paid": void markOrderPaymentSent();break;
+    case "view-order-payment": viewCustomerOrder(target.dataset.id);break;
+    case "review-payment": void reviewStorePayment(target.dataset.id,target.dataset.approved==="true");break;
+    case "advance-delivery": void advanceDeliveryStatus(target.dataset.id,target.dataset.status);break;
     case "admin-signout": void signOutAdmin();break;
   }
 });
@@ -905,6 +1209,14 @@ document.getElementById("product-form").addEventListener("submit",event=>{
   event.preventDefault();
   void saveProduct(event.currentTarget);
 });
+document.getElementById("delivery-settings-form").addEventListener("submit",event=>{
+  event.preventDefault();
+  void saveDeliveryFee(event.currentTarget);
+});
+document.querySelector(".admin-tabs").addEventListener("click",event=>{
+  const tab=event.target.closest("[data-admin-section]");
+  if(tab) selectAdminSection(tab.dataset.adminSection);
+});
 document.querySelector(".search-toggle").addEventListener("click",()=>{
   const bar=document.querySelector(".search-bar");
   bar.hidden=!bar.hidden;
@@ -921,10 +1233,7 @@ document.querySelectorAll(".modal-backdrop").forEach(backdrop=>backdrop.addEvent
 }));
 document.getElementById("checkout-form").addEventListener("submit",event=>{
   event.preventDefault();
-  if(!cartCount()) {showToast("Your cart is empty.");setView("cart");return;}
-  const form=new FormData(event.currentTarget);
-  state.order={reference:`DEMO-${Date.now().toString().slice(-7)}`,name:String(form.get("name")||"Customer"),total:cartSubtotal()};
-  setView("payment");
+  void placeStoreOrder(event.currentTarget);
 });
 
 document.getElementById("year").textContent=new Date().getFullYear();
@@ -934,16 +1243,24 @@ renderCatalog();
 updateCartBadge();
 setAdminLinksVisible(false);
 const initialHash=location.hash.slice(1);
-if(initialHash==="admin"||initialHash==="admin/login") state.pendingAdminRoute=true;
+if(initialHash==="admin"||initialHash==="admin/login") {
+  state.pendingAdminRoute=true;
+  state.pendingAuthView="admin";
+}
+else if(initialHash==="profile"||initialHash==="checkout") state.pendingAuthView=initialHash;
 else if(views.includes(initialHash)&&initialHash!=="payment"&&initialHash!=="checkout") setView(initialHash);
 window.addEventListener("hashchange",()=>{
   const hash=location.hash.slice(1);
   if(hash==="admin"||hash==="admin/login") {
     state.pendingAdminRoute=true;
+    state.pendingAuthView="admin";
     if(state.authReady) {
       if(state.supabase) void updateAuthState(state.session);
       else {state.pendingAdminRoute=false;setView("admin-login");}
     }
+  } else if(hash==="checkout"&&!state.session?.user) {
+    state.pendingAuthView="checkout";
+    setView("checkout");
   } else if(views.includes(hash)&&hash!=="payment"&&hash!=="checkout") {
     setView(hash);
   }

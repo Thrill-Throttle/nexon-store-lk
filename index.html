@@ -132,34 +132,38 @@
             <div class="eyebrow">STORE TOOLS</div><h2>Manage your shop.</h2><p>Review product and category changes in your local draft before publishing them to the live store.</p>
             <button class="button profile-admin-link" type="button" data-view="admin">Open store admin <span>↗</span></button>
           </section>
+          <section class="profile-card profile-orders-card">
+            <div class="profile-card-heading"><div><div class="eyebrow">YOUR PURCHASES</div><h2>Order history</h2></div><button class="text-button" type="button" data-action="refresh-customer-orders">Refresh</button></div>
+            <div id="customer-orders-list" class="customer-orders-list"><p class="profile-note">Your orders will appear here.</p></div>
+          </section>
         </div>
       </section>
 
       <section class="view admin-login-view" id="admin-login-view" hidden>
-        <div class="page-banner admin-banner"><div class="eyebrow">SECURE GOOGLE SIGN-IN</div><h1>Sign in to <span>Nexon.</span></h1><p>Continue with the Google account approved for store access.</p></div>
+        <div class="page-banner admin-banner">        <div class="eyebrow">SECURE GOOGLE SIGN-IN</div><h1>Sign in to <span>Nexon.</span></h1><p>Sign in with Google to view your profile and orders. Store Admin access is limited to the approved account.</p></div>
         <div class="admin-login-card">
           <div class="admin-login-lock">⌑</div>
           <div class="eyebrow">YOUR ACCOUNT</div>
           <h2>Welcome<br><span>back.</span></h2>
           <p id="admin-auth-message" class="admin-auth-message" role="status" aria-live="polite">Checking secure Google sign-in setup…</p>
           <button class="button button-primary full-width" id="admin-google-login" type="button" data-action="admin-google-login" disabled><span class="google-mark" aria-hidden="true">G</span>Continue with Google <span>↗</span></button>
-          <small>Google sign-in is currently enabled only for the store administrator. Customer accounts are not available yet.</small>
+          <small>Sign in with Google for your customer profile and order history. Only the approved account can access Store Admin.</small>
           <button type="button" class="text-button" data-view="home">Back to the shop ←</button>
         </div>
       </section>
 
       <section class="view admin-view" id="admin-view" hidden>
-        <div class="page-banner admin-banner"><div class="eyebrow">SECURE STORE MANAGEMENT</div><h1>Manage your <span>shop.</span></h1><p>Changes stay as a private draft in this browser until you review them and choose to publish.</p></div>
+        <div class="page-banner admin-banner"><div class="eyebrow">SECURE STORE MANAGEMENT</div><h1>Manage your <span>shop.</span></h1><p>Manage products, store settings, customer orders and delivery from one dashboard.</p></div>
         <div class="admin-account-bar"><div><span class="admin-account-status-dot"></span><span>Signed in as</span><strong id="admin-account-email"></strong></div><button class="button admin-signout" type="button" data-action="admin-signout">Sign out</button></div>
         <div class="admin-feedback" id="admin-feedback" role="status" aria-live="polite" hidden></div>
         <div class="admin-draft-bar" id="admin-draft-bar" role="status" aria-live="polite" hidden><p id="admin-draft-message"></p><div id="admin-draft-actions" class="admin-draft-actions"><button class="button admin-signout" type="button" data-action="discard-catalog">Discard draft</button><button class="button button-primary" type="button" data-action="publish-catalog">Publish updates</button></div></div>
+        <nav class="admin-tabs" aria-label="Store admin pages">
+          <button type="button" class="admin-tab is-active" data-admin-section="products">Products</button>
+          <button type="button" class="admin-tab" data-admin-section="general">General settings</button>
+          <button type="button" class="admin-tab" data-admin-section="orders">Orders <span id="admin-order-badge" hidden>0</span></button>
+        </nav>
         <div class="admin-layout" id="admin-layout" hidden>
-          <section class="admin-card category-manager">
-            <div class="admin-card-heading"><div><div class="eyebrow">YOUR SHOP COLLECTIONS</div><h2>Categories</h2></div><span class="admin-counter" id="admin-category-count">0</span></div>
-            <form id="category-form" class="admin-inline-form"><label for="new-category-name">Add a category</label><div class="admin-input-row"><input id="new-category-name" name="category" maxlength="32" placeholder="e.g. Beauty & personal care" required><button class="button button-primary" type="submit">Add category <span>+</span></button></div></form>
-            <p class="admin-hint">Category edits are previewed locally and only appear to shoppers after you publish.</p>
-            <div class="admin-category-list" id="admin-category-list"></div>
-          </section>
+          <section class="admin-section is-active" id="admin-products-section">
           <section class="admin-card product-manager">
             <div class="admin-card-heading"><div><div class="eyebrow">YOUR STORE CATALOG</div><h2 id="admin-product-heading">Add a product</h2></div><span class="admin-counter" id="admin-product-count">0</span></div>
             <form id="product-form" class="admin-product-form">
@@ -173,6 +177,31 @@
             </form>
             <div class="admin-product-list-heading"><strong>Products</strong><span>Choose edit to update a listing.</span></div>
             <div class="admin-product-list" id="admin-product-list"></div>
+          </section>
+          </section>
+          <section class="admin-section" id="admin-general-section">
+            <section class="admin-card category-manager">
+              <div class="admin-card-heading"><div><div class="eyebrow">YOUR SHOP COLLECTIONS</div><h2>Categories</h2></div><span class="admin-counter" id="admin-category-count">0</span></div>
+              <form id="category-form" class="admin-inline-form"><label for="new-category-name">Add a category</label><div class="admin-input-row"><input id="new-category-name" name="category" maxlength="32" placeholder="e.g. Beauty & personal care" required><button class="button button-primary" type="submit">Add category <span>+</span></button></div></form>
+              <p class="admin-hint">Category edits are previewed locally and only appear to shoppers after you publish.</p>
+              <div class="admin-category-list" id="admin-category-list"></div>
+            </section>
+            <section class="admin-card settings-card">
+              <div class="admin-card-heading"><div><div class="eyebrow">SHIPPING & PRICING</div><h2>Delivery fee</h2></div></div>
+              <p class="admin-hint">This flat fee is added to every new order. Existing orders keep the delivery fee set when they were placed.</p>
+              <form id="delivery-settings-form" class="delivery-settings-form">
+                <label for="delivery-fee">Flat delivery fee (LKR)</label>
+                <div class="admin-input-row"><input id="delivery-fee" name="deliveryFee" type="number" min="0" max="1000000" step="1" value="0" required><button class="button button-primary" type="submit">Save fee</button></div>
+              </form>
+              <p class="admin-hint" id="delivery-fee-status">Loading store settings…</p>
+            </section>
+          </section>
+          <section class="admin-section" id="admin-orders-section">
+            <section class="admin-card orders-card">
+              <div class="admin-card-heading"><div><div class="eyebrow">CUSTOMER CHECKOUTS</div><h2>Orders</h2></div><button class="button admin-signout" type="button" data-action="refresh-admin-orders">Refresh orders</button></div>
+              <p class="admin-hint">Check the payment receipt in WhatsApp before approving payment. Delivery status starts at Product Packed after approval.</p>
+              <div class="orders-list" id="admin-orders-list"><p class="admin-empty">Loading customer orders…</p></div>
+            </section>
           </section>
         </div>
       </section>
@@ -196,7 +225,7 @@
 
       <section class="view checkout-view" id="checkout-view" hidden>
         <div class="page-banner compact-banner"><div class="eyebrow">ALMOST YOURS</div><h1>Checkout <span>preview.</span></h1><p>Enter your delivery details to preview the QR payment instructions.</p></div>
-        <div class="prototype-notice"><strong>Website preview:</strong> checkout and orders are not connected to a server yet. Your details are not sent or saved, and no payment should be made. Google sign-in and secure order processing can be added in the next stage.</div>
+        <div class="prototype-notice"><strong>Payment is reviewed manually.</strong> Sign in to save your order and track its status. Scan the LankaQR and send your payment receipt through WhatsApp. The store admin must verify the payment before packing your order.</div>
         <div class="checkout-layout">
           <form class="checkout-form" id="checkout-form">
             <h2>Delivery details</h2>
@@ -205,18 +234,18 @@
             <label>Delivery address<input name="address" autocomplete="street-address" required></label>
             <div class="form-row"><label>City<input name="city" autocomplete="address-level2" required></label><label>District<input name="district" required></label></div>
             <label>Delivery instructions <span class="optional">(optional)</span><textarea name="instructions" rows="3"></textarea></label>
-            <button class="button button-primary full-width" type="submit">Preview payment instructions <span>→</span></button>
+            <button class="button button-primary full-width" type="submit">Place order and view payment <span>→</span></button>
           </form>
           <aside class="order-summary" id="checkout-summary"></aside>
         </div>
       </section>
 
       <section class="view payment-view" id="payment-view" hidden>
-        <div class="page-banner compact-banner"><div class="eyebrow">PAYMENT INSTRUCTIONS PREVIEW</div><h1>One last <span>step.</span></h1><p>Scan the LankaQR code with a compatible banking app.</p></div>
-        <div class="prototype-notice"><strong>Preview only — no order was placed.</strong> Do not transfer money using this demo page. Orders, authentication, and payment verification must be connected before launch.</div>
+        <div class="page-banner compact-banner"><div class="eyebrow">ORDER <span id="payment-order-reference">—</span></div><h1>Complete your <span>payment.</span></h1><p>Scan LankaQR, then send your payment receipt to the store for manual approval.</p></div>
+        <div class="prototype-notice"><strong id="payment-status-message">Your order is waiting for payment.</strong> Payment is not confirmed until the store admin checks your receipt. Your order will be packed only after payment approval.</div>
         <div class="payment-layout">
           <div class="payment-qr-card"><div class="eyebrow">LANKAQR PAYMENT</div><img src="assets/payment-qr.png" alt="NEXON STORE LankaQR payment code"><p>Scan with your compatible banking or payment app.</p><a class="text-button" href="assets/payment-qr.png" download="nexon-store-payment-qr.png">Download QR image ↓</a></div>
-          <div class="payment-details"><div class="payment-reference"><span>DEMO ORDER REFERENCE</span><strong id="payment-reference">—</strong></div><div class="payment-total"><span>Preview total</span><strong id="payment-total">LKR 0</strong></div><p>After completing your payment, please send your payment receipt to our official NEXON STORE WhatsApp number for verification.</p><p class="payment-warning">This preview does not create or save an order. The QR may accept real payments, so please do not pay until the store’s checkout is live and your order is confirmed.</p><a class="button button-primary full-width whatsapp-receipt" href="https://wa.me/94722924522" target="_blank" rel="noreferrer">Send payment receipt via WhatsApp <span>↗</span></a><small>WhatsApp opens with a message only. Attach and send your receipt manually.</small><button class="text-button" type="button" data-view="home">Return to the store ←</button></div>
+          <div class="payment-details"><div class="payment-reference"><span>ORDER REFERENCE</span><strong id="payment-reference">—</strong></div><div class="payment-total"><span>Total to pay</span><strong id="payment-total">LKR 0</strong></div><p>After you pay, confirm below and send the payment receipt to our WhatsApp. The store will check the receipt and update your order.</p><button class="button button-primary full-width" type="button" data-action="customer-mark-paid" id="customer-mark-paid">I have paid — notify the store <span>→</span></button><a class="button full-width whatsapp-receipt" id="whatsapp-receipt" href="https://wa.me/94722924522" target="_blank" rel="noreferrer" hidden>Send payment receipt via WhatsApp <span>↗</span></a><small>WhatsApp opens a message. Attach the payment receipt yourself.</small><button class="text-button" type="button" data-view="profile">View order status →</button></div>
         </div>
       </section>
     </main>
@@ -228,11 +257,11 @@
         <div><strong class="footer-title">Need a hand?</strong><a href="https://wa.me/94722924522" target="_blank" rel="noreferrer">WhatsApp: +94 72 292 4522</a><span>Islandwide, Sri Lanka</span></div>
         <div class="footer-qr"><img src="assets/payment-qr.png" alt="Scan to pay using LankaQR"><span>Pay with LankaQR</span></div>
       </div>
-      <div class="footer-bottom"><span>© <span id="year"></span> NEXON STORE LK. Good finds for every day.</span><span>Secure payment setup coming soon</span></div>
+      <div class="footer-bottom"><span>© <span id="year"></span> NEXON STORE LK. Good finds for every day.</span><span>Payments verified manually by the store</span></div>
     </footer>
 
     <div class="modal-backdrop" id="product-modal" hidden><div class="product-modal modal-card" role="dialog" aria-modal="true" aria-label="Product details"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><div id="product-modal-content"></div></div></div>
-    <div class="modal-backdrop" id="login-modal" hidden><div class="login-modal modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><img src="assets/nexon-logo.png" alt="" class="login-logo"><div class="eyebrow">WELCOME TO NEXON</div><h2 id="login-title">Your account,<br><span>your way.</span></h2><p>Sign in with Google to open your profile. Store administration is currently limited to the approved store account.</p><button class="button button-primary full-width" type="button" data-view="admin-login"><span class="google-mark" aria-hidden="true">G</span>Continue with Google <span>↗</span></button><small>Shopping is open to everyone. No account is needed to browse or use your cart.</small></div></div>
+    <div class="modal-backdrop" id="login-modal" hidden><div class="login-modal modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><img src="assets/nexon-logo.png" alt="" class="login-logo"><div class="eyebrow">WELCOME TO NEXON</div><h2 id="login-title">Your account,<br><span>your way.</span></h2><p>Sign in with Google to open your profile. Store administration is currently limited to the approved store account.</p>    <button class="button button-primary full-width" type="button" data-action="customer-google-login"><span class="google-mark" aria-hidden="true">G</span>Continue with Google <span>↗</span></button><small>Shopping is open to everyone. No account is needed to browse or use your cart.</small></div></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
