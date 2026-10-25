@@ -193,5 +193,5 @@ body{background:var(--bg)}
 .profile-shop-link{margin-top:12px;font-size:10px}
 @media(max-width:1060px){.profile-layout{margin-left:5.5%;margin-right:5.5%}}
 @media(max-width:700px){.profile-layout{grid-template-columns:minmax(0,1fr);grid-template-areas:"identity" "cart" "orders" "admin";margin-top:18px;margin-bottom:45px;gap:12px}.profile-card{padding:20px}}
-@media(max-width:420px){.account-avatar{display:none}.account-button.is-signed-in{max-width:40px;justify-content:center;overflow:hidden}.account-button.is-signed-in #account-label{display:none}.bag-icon{width:19px;height:19px;flex-basis:19px}}
+@media(max-width:420px){.account-avatar{display:none}.account-button.is-signed-in{max-width:120px;justify-content:flex-start;overflow:visible}.account-button.is-signed-in #account-label{display:inline}.bag-icon{width:19px;height:19px;flex-basis:19px}}
 @media(max-width:700px){.profile-orders-card{grid-column:auto}}
