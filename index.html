@@ -160,7 +160,6 @@
         <nav class="admin-tabs" aria-label="Store admin pages">
           <button type="button" class="admin-tab is-active" data-admin-section="products">Products</button>
           <button type="button" class="admin-tab" data-admin-section="general">General settings</button>
-          <button type="button" class="admin-tab" data-admin-section="logo">Logo</button>
           <button type="button" class="admin-tab" data-admin-section="orders">Orders <span id="admin-order-badge" hidden>0</span></button>
         </nav>
         <div class="admin-layout" id="admin-layout" hidden>
@@ -196,15 +195,6 @@
               </form>
               <p class="admin-hint" id="delivery-fee-status">Loading store settings…</p>
             </section>
-          </section>
-          <section class="admin-section" id="admin-orders-section">
-            <section class="admin-card orders-card">
-              <div class="admin-card-heading"><div><div class="eyebrow">CUSTOMER CHECKOUTS</div><h2>Orders</h2></div><button class="button admin-signout" type="button" data-action="refresh-admin-orders">Refresh orders</button></div>
-              <p class="admin-hint">Check the payment receipt in WhatsApp before approving payment. Delivery status starts at Product Packed after approval.</p>
-              <div class="orders-list" id="admin-orders-list"><p class="admin-empty">Loading customer orders…</p></div>
-            </section>
-          </section>
-          <section class="admin-section" id="admin-logo-section">
             <section class="admin-card logo-settings-card">
               <div class="admin-card-heading"><div><div class="eyebrow">STORE BRANDING</div><h2>Website logo</h2></div></div>
               <p class="admin-hint">Choose a PNG, JPEG, or WebP image up to 5 MB. Preview it first; publishing replaces the logo across the shop.</p>
@@ -215,6 +205,13 @@
                 <p class="admin-hint" id="logo-status" role="status">Current logo is shown across the website.</p>
                 <button class="button button-primary" type="submit" id="publish-logo-button">Publish logo</button>
               </form>
+            </section>
+          </section>
+          <section class="admin-section" id="admin-orders-section">
+            <section class="admin-card orders-card">
+              <div class="admin-card-heading"><div><div class="eyebrow">CUSTOMER CHECKOUTS</div><h2>Orders</h2></div><button class="button admin-signout" type="button" data-action="refresh-admin-orders">Refresh orders</button></div>
+              <p class="admin-hint">Check the payment receipt in WhatsApp before approving payment. Delivery status starts at Product Packed after approval.</p>
+              <div class="orders-list" id="admin-orders-list"><p class="admin-empty">Loading customer orders…</p></div>
             </section>
           </section>
         </div>

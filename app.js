@@ -533,7 +533,7 @@ async function loadCustomerOrders() {
   renderCustomerOrders();
 }
 function selectAdminSection(section) {
-  if(!state.adminAuthorized||!["products","general","logo","orders"].includes(section)) return;
+  if(!state.adminAuthorized||!["products","general","orders"].includes(section)) return;
   state.adminSection=section;
   document.querySelectorAll(".admin-tab").forEach(tab=>{
     const active=tab.dataset.adminSection===section;
@@ -544,7 +544,7 @@ function selectAdminSection(section) {
     page.classList.toggle("is-active",page.id===`admin-${section}-section`);
   });
   if(section==="general") void loadStoreSettings(true);
-  if(section==="logo") applyStoreLogo(state.storeSettings.logo_path,state.storeSettings.logo_updated_at);
+  if(section==="general") applyStoreLogo(state.storeSettings.logo_path,state.storeSettings.logo_updated_at);
   if(section==="orders") void loadAdminOrders();
 }
 async function loadStoreSettings(showError=false) {
