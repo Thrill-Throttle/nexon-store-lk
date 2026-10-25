@@ -24,13 +24,17 @@ const state = {
   adminAuthorized:false,
   authReady:false,
   storeLoaded:false,
+  loadedCategories:[],
+  loadedProducts:[],
   catalogUnavailable:false,
   catalogIsDemo:true,
+  catalogDraft:null,
+  catalogDraftError:false,
   pendingAdminRoute:false,
   adminMessage:"Preparing Google sign-in…"
 };
 const lkr = new Intl.NumberFormat("en-LK",{style:"currency",currency:"LKR",maximumFractionDigits:0});
-const views = ["home","products","admin-login","admin","about","cart","checkout","payment"];
+const views = ["home","products","profile","admin-login","admin","about","cart","checkout","payment"];
 let toastTimer;
 
 function readSavedValue(key,fallback) {
@@ -77,9 +81,14 @@ function updateAccountButton(session) {
   button.setAttribute("aria-label",signedIn?`Signed in as ${email||"your account"}. Open your profile.`:"Sign in");
   button.title=signedIn?email||"Open your profile":"Sign in";
   button.querySelector(".user-icon").textContent=signedIn?(email?.trim().charAt(0).toUpperCase()||"♙"):"♙";
+  const avatar=button.querySelector(".account-avatar");
+  const avatarUrl=session?.user?.user_metadata?.avatar_url||session?.user?.user_metadata?.picture;
+  avatar.hidden=!signedIn||!avatarUrl;
+  avatar.src=signedIn&&avatarUrl?avatarUrl:"";
 }
 function setView(requestedView) {
   let view=requestedView;
+  if(view==="profile"&&!state.adminAuthorized) view="admin-login";
   if(view==="admin"&&!state.adminAuthorized) view="admin-login";
   if(!views.includes(view)) return;
   closeModals();
@@ -89,6 +98,7 @@ function setView(requestedView) {
   document.querySelector(".main-nav").classList.remove("open");
   document.querySelector(".menu-toggle").setAttribute("aria-expanded","false");
   if(view==="products") renderCatalog();
+  if(view==="profile"&&state.adminAuthorized) renderProfile();
   if(view==="admin"&&state.adminAuthorized) renderAdmin();
   if(view==="cart") renderCart();
   if(view==="checkout") renderCheckout();
@@ -141,7 +151,17 @@ function renderCatalog() {
   else if(state.catalogIsDemo) status.textContent="Store preview: product listings, stock and prices are samples. Connect the Supabase catalog to publish real store listings.";
   document.getElementById("all-products").hidden=matched.length===0;
 }
-function updateCartBadge() { document.querySelector(".cart-count").textContent=cartCount(); }
+function updateCartBadge() {
+  const count=cartCount();
+  document.querySelector(".cart-count").textContent=count;
+  document.querySelector(".cart-button").setAttribute("aria-label",`Shopping cart, ${count} ${count===1?"item":"items"}`);
+  const profileCount=document.getElementById("profile-cart-count");
+  const profileSummary=document.getElementById("profile-cart-summary");
+  if(profileCount) profileCount.textContent=count;
+  if(profileSummary) profileSummary.textContent=count
+    ?`${count} ${count===1?"item":"items"} in your cart · ${lkr.format(cartSubtotal())}`
+    :"Your cart is empty. Browse the shop and find something you love.";
+}
 function addToCart(id) {
   const product=getProduct(id);
   if(!product) return;
@@ -227,6 +247,16 @@ function renderAdmin() {
   document.getElementById("admin-account-email").textContent=state.session.user.email||"";
   document.getElementById("admin-layout").hidden=!state.storeLoaded;
   if(!state.storeLoaded) return;
+  const draftBar=document.getElementById("admin-draft-bar");
+  const draftMessage=document.getElementById("admin-draft-message");
+  const draftActions=document.getElementById("admin-draft-actions");
+  draftBar.hidden=!state.catalogDraftError&&(!state.catalogDraft||!hasCatalogDraftChanges());
+  draftActions.hidden=state.catalogDraftError||!hasCatalogDraftChanges();
+  draftMessage.textContent=state.catalogDraftError
+    ?"A saved local draft could not be loaded. Draft editing is disabled so it cannot be overwritten."
+    :state.catalogDraft&&hasCatalogDraftChanges()
+      ?"Your changes are saved in this browser only. Review the shop preview, then publish when ready."
+      :"";
   document.getElementById("admin-category-count").textContent=categories.length;
   document.getElementById("admin-category-list").innerHTML=categories.map((category,index)=>
     `<form class="admin-category-row" data-category-edit="${escapeHTML(category)}"><span class="admin-category-number">${String(index+1).padStart(2,"0")}</span><input aria-label="Category name" name="category" maxlength="32" value="${escapeHTML(category)}" required><button type="submit" class="text-button" aria-label="Save category ${escapeHTML(category)}">Save</button>${categories.length>1?`<button type="button" class="remove-item" data-action="delete-category" data-category="${escapeHTML(category)}">Delete</button>`:""}</form>`
@@ -241,15 +271,39 @@ function renderAdmin() {
     `<div class="admin-product-row"><img src="${escapeHTML(product.image)}" alt=""><div class="admin-product-copy"><strong>${escapeHTML(product.name)}</strong><span>${escapeHTML(product.category)} · ${lkr.format(product.price)} · ${product.stock} in stock</span></div><button class="text-button" type="button" data-action="edit-product" data-id="${escapeHTML(product.id)}">Edit</button><button class="remove-item" type="button" data-action="delete-product" data-id="${escapeHTML(product.id)}">Delete</button></div>`
   ).join("")||`<p class="admin-empty">No products yet. Add your first item above.</p>`;
 }
+function renderProfile() {
+  const user=state.session?.user;
+  if(!user||!state.adminAuthorized) return;
+  const metadata=user.user_metadata||{};
+  const email=user.email||"";
+  const fullName=String(metadata.full_name||metadata.name||email.split("@")[0]||"Your profile").trim();
+  const firstName=fullName.split(/\s+/)[0]||"back";
+  const avatarUrl=metadata.avatar_url||metadata.picture||"";
+  const avatar=document.getElementById("profile-avatar");
+  const safeAvatarUrl=/^https:\/\/[^\s"'<>]+$/i.test(avatarUrl);
+  document.getElementById("profile-first-name").textContent=`${firstName}.`;
+  document.getElementById("profile-name").textContent=fullName;
+  document.getElementById("profile-email").textContent=email;
+  const initials=document.getElementById("profile-initials");
+  initials.textContent=firstName.slice(0,1).toUpperCase();
+  initials.hidden=safeAvatarUrl;
+  avatar.hidden=!safeAvatarUrl;
+  avatar.onerror=()=>{avatar.hidden=true;initials.hidden=false;};
+  avatar.src=safeAvatarUrl?avatarUrl:"";
+  document.getElementById("profile-admin-card").hidden=!state.adminAuthorized;
+  updateCartBadge();
+}
 
 async function loadStoreData() {
   const {data:categoryRows,error:categoryError}=await state.supabase.from("store_categories").select("id,name").order("name");
   if(categoryError) throw categoryError;
   const {data:productRows,error:productError}=await state.supabase.from("store_products").select("id,name,category_id,price_lkr,stock_quantity,badge,featured,image_url,description,category:store_categories!inner(name)").order("created_at",{ascending:false});
   if(productError) throw productError;
-  categories=categoryRows.map(row=>row.name);
+  state.loadedCategories=categoryRows.map(row=>({id:row.id,name:row.name}));
+  categories=state.loadedCategories.map(row=>row.name);
   products=productRows.map(row=>({
     id:row.id,
+    categoryId:row.category_id,
     name:row.name,
     category:row.category.name,
     price:Number(row.price_lkr),
@@ -259,13 +313,151 @@ async function loadStoreData() {
     image:row.image_url,
     description:row.description
   }));
+  state.loadedProducts=products.map(product=>({...product}));
   state.storeLoaded=true;
   state.catalogUnavailable=false;
   state.catalogIsDemo=false;
+  state.catalogDraft=null;
+  state.catalogDraftError=false;
+  if(state.adminAuthorized&&state.session?.user?.id) {
+    try {
+      state.catalogDraft=readCatalogDraft(state.session.user.id);
+      if(state.catalogDraft) applyCatalogDraftPreview(state.catalogDraft);
+    } catch(error) {
+      console.error("Could not restore the local store draft:",error);
+      state.catalogDraftError=true;
+      showAdminFeedback("A saved local draft could not be loaded. Draft editing is disabled to protect it. Check this browser's local storage before continuing.",true);
+    }
+  }
   renderFeatured();
   renderHomeCategories();
   renderCatalog();
   if(state.currentView==="admin") renderAdmin();
+}
+
+function catalogDraftStorageKey(userId) { return `nexon-store-catalog-draft:${userId}`; }
+function categorySnapshot(items) {
+  return items.map(item=>({id:item.id,name:item.name})).sort((left,right)=>left.id<right.id?-1:left.id>right.id?1:0);
+}
+function productSnapshot(items) {
+  return items.map(product=>({
+    id:product.id,
+    name:product.name,
+    category_id:product.categoryId,
+    price_lkr:product.price,
+    stock_quantity:product.stock,
+    badge:product.badge,
+    featured:product.featured,
+    image_url:product.image,
+    description:product.description
+  })).sort((left,right)=>left.id<right.id?-1:left.id>right.id?1:0);
+}
+function hasCatalogDraftChanges(draft=state.catalogDraft) {
+  if(!draft) return false;
+  return JSON.stringify(categorySnapshot(draft.categories))!==JSON.stringify(draft.baseCategories)||
+    JSON.stringify(productSnapshot(draft.products))!==JSON.stringify(draft.baseProducts);
+}
+function getCatalogDraftChangeCount(draft=state.catalogDraft) {
+  if(!draft) return 0;
+  const categoryChanges=JSON.stringify(categorySnapshot(draft.categories))===JSON.stringify(draft.baseCategories)?0:1;
+  const productChanges=JSON.stringify(productSnapshot(draft.products))===JSON.stringify(draft.baseProducts)?0:1;
+  return categoryChanges+productChanges;
+}
+function readCatalogDraft(userId) {
+  const saved=localStorage.getItem(catalogDraftStorageKey(userId));
+  if(saved===null) return null;
+  const draft=JSON.parse(saved);
+  if(!draft||draft.version!==1||draft.userId!==userId||!Array.isArray(draft.baseCategories)||
+    !Array.isArray(draft.baseProducts)||!Array.isArray(draft.categories)||!Array.isArray(draft.products)) {
+    throw new Error("The saved store draft has an unsupported or incomplete format.");
+  }
+  const validId=id=>typeof id==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+  const validCategory=category=>validId(category?.id)&&typeof category.name==="string"&&category.name.length>=1&&category.name.length<=32;
+  const validProduct=product=>validId(product?.id)&&validId(product.category_id)&&typeof product.name==="string"&&
+    Number.isSafeInteger(product.price_lkr)&&product.price_lkr>0&&Number.isInteger(product.stock_quantity)&&product.stock_quantity>=0&&
+    typeof product.badge==="string"&&typeof product.featured==="boolean"&&typeof product.image_url==="string"&&typeof product.description==="string";
+  const validDraftProduct=product=>validId(product?.id)&&validId(product.categoryId)&&typeof product.category==="string"&&
+    typeof product.name==="string"&&Number.isSafeInteger(product.price)&&product.price>0&&Number.isInteger(product.stock)&&product.stock>=0&&
+    typeof product.badge==="string"&&typeof product.featured==="boolean"&&typeof product.image==="string"&&typeof product.description==="string";
+  if(!draft.baseCategories.every(validCategory)||!draft.categories.every(validCategory)||
+    !draft.baseProducts.every(validProduct)||!draft.products.every(validDraftProduct)) {
+    throw new Error("The saved store draft contains invalid catalog entries.");
+  }
+  return draft;
+}
+function createCatalogDraft() {
+  const userId=state.session?.user?.id;
+  if(!userId) return null;
+  const baseCategories=categorySnapshot(state.loadedCategories);
+  const baseProducts=productSnapshot(state.loadedProducts);
+  return {
+    version:1,
+    userId,
+    baseCategories,
+    baseProducts,
+    categories:state.loadedCategories.map(category=>({...category})),
+    products:state.loadedProducts.map(product=>({...product}))
+  };
+}
+function cloneCatalogDraft(draft) {
+  return {
+    version:draft.version,
+    userId:draft.userId,
+    baseCategories:draft.baseCategories.map(category=>({...category})),
+    baseProducts:draft.baseProducts.map(product=>({...product})),
+    categories:draft.categories.map(category=>({...category})),
+    products:draft.products.map(product=>({...product}))
+  };
+}
+function applyCatalogDraftPreview(draft) {
+  categories=draft.categories.map(category=>category.name);
+  products=draft.products.map(product=>({...product}));
+  if(state.category!=="All"&&!categories.includes(state.category)) state.category="All";
+}
+function restorePublishedCatalogPreview() {
+  state.catalogDraft=null;
+  state.catalogDraftError=false;
+  categories=state.loadedCategories.map(category=>category.name);
+  products=state.loadedProducts.map(product=>({...product}));
+  if(state.storeLoaded) {
+    renderFeatured();
+    renderHomeCategories();
+    renderCatalog();
+    renderCart();
+    updateCartBadge();
+  }
+}
+function refreshCatalogPreview() {
+  renderFeatured();
+  renderHomeCategories();
+  renderCatalog();
+  renderCart();
+  updateCartBadge();
+  if(state.currentView==="admin") renderAdmin();
+}
+function stageCatalogDraft(draft) {
+  if(state.catalogDraftError) {
+    showAdminFeedback("The saved local draft could not be read. Draft editing is disabled to protect it.",true);
+    return false;
+  }
+  try {
+    localStorage.setItem(catalogDraftStorageKey(draft.userId),JSON.stringify(draft));
+  } catch(error) {
+    console.error("Could not save the local store draft:",error);
+    showAdminFeedback("This browser could not save the draft. Your change was not applied.",true);
+    return false;
+  }
+  state.catalogDraft=draft;
+  applyCatalogDraftPreview(draft);
+  refreshCatalogPreview();
+  return true;
+}
+function newCatalogId() {
+  if(!window.crypto?.randomUUID) {
+    showAdminFeedback("This browser cannot create secure draft IDs. Update your browser and try again.",true);
+    return null;
+  }
+  return window.crypto.randomUUID();
 }
 
 function isGoogleAccount(user) {
@@ -276,6 +468,7 @@ async function updateAuthState(session) {
   state.session=session;
   updateAccountButton(session);
   state.adminAuthorized=false;
+  restorePublishedCatalogPreview();
   state.authReady=false;
   setAdminLinksVisible(false);
   document.getElementById("admin-layout").hidden=true;
@@ -344,7 +537,9 @@ async function updateAuthState(session) {
     state.pendingAdminRoute=false;
     setView("admin");
   } else if(state.currentView==="admin-login") {
-    setView("admin");
+    setView("profile");
+  } else if(state.currentView==="profile") {
+    renderProfile();
   } else {
     renderAdminLogin();
   }
@@ -408,7 +603,7 @@ async function initializeAuth() {
 async function startAdminGoogleLogin() {
   if(!state.supabase) {setAdminMessage("Secure Google sign-in is not configured. Follow the Supabase setup instructions in README.md.",true);renderAdminLogin();return;}
   setAdminMessage("Redirecting to Google for secure sign-in…");
-  const redirectTo=`${location.origin}${location.pathname}#admin`;
+  const redirectTo=`${location.origin}${location.pathname}#profile`;
   let result;
   try {
     result=await state.supabase.auth.signInWithOAuth({provider:"google",options:{redirectTo,scopes:"openid email profile",queryParams:{prompt:"select_account"}}});
@@ -443,65 +638,55 @@ async function signOutAdmin() {
   }
   state.session=null;
   state.adminAuthorized=false;
+  restorePublishedCatalogPreview();
   updateAccountButton(null);
   setAdminLinksVisible(false);
   setView("home");
 }
-async function withAdminAccess(action) {
-  if(!state.supabase||!state.adminAuthorized||!state.session) {
-    showAdminFeedback("Administrator authorization is required. Sign in with the approved Google account.",true);
-    setView("admin-login");
-    return false;
-  }
-  let result;
-  try {
-    result=await action();
-  } catch(error) {
-    console.error("Secure store management request could not reach the database:",error);
-    showAdminFeedback("The database could not be reached. Check your connection and try again.",true);
-    return false;
-  }
-  if(result?.error) {
-    console.error("Secure store management operation failed:",result.error);
-    showAdminFeedback("The database rejected this change. Check your admin access and database setup, then try again.",true);
-    return false;
-  }
-  return true;
-}
-
 async function addCategory(rawName) {
   const name=rawName.trim().slice(0,32);
   if(!name) {showAdminFeedback("Enter a category name.",true);return false;}
   if(categories.some(category=>category.toLowerCase()===name.toLowerCase())) {showAdminFeedback("That category already exists.",true);return false;}
-  if(!await withAdminAccess(()=>state.supabase.from("store_categories").insert({name}))) return false;
-  try {await loadStoreData();renderAdmin();showToast(`${name} added to your shop.`);return true;}
-  catch(error) {console.error("Could not refresh categories after saving:",error);showAdminFeedback("The category was saved, but the shop list could not be refreshed. Reload and try again.",true);return false;}
+  const id=newCatalogId();
+  if(!id) return false;
+  const draft=state.catalogDraft?cloneCatalogDraft(state.catalogDraft):createCatalogDraft();
+  if(!draft) {showAdminFeedback("Sign in again before editing the store.",true);return false;}
+  draft.categories.push({id,name});
+  if(!stageCatalogDraft(draft)) return false;
+  showToast(`${name} saved as a local draft.`);
+  return true;
 }
 async function renameCategory(previousName,rawName) {
   const name=rawName.trim().slice(0,32);
   if(!name) {showAdminFeedback("Category names cannot be empty.",true);renderAdmin();return;}
   if(categories.some(category=>category!==previousName&&category.toLowerCase()===name.toLowerCase())) {showAdminFeedback("A category with that name already exists.",true);renderAdmin();return;}
-  const category=categories.find(item=>item===previousName);
+  const draft=state.catalogDraft?cloneCatalogDraft(state.catalogDraft):createCatalogDraft();
+  if(!draft) {showAdminFeedback("Sign in again before editing the store.",true);return;}
+  const category=draft.categories.find(item=>item.name===previousName);
   if(!category) return;
-  const {data:categoryRow,error:lookupError}=await state.supabase.from("store_categories").select("id").eq("name",previousName).single();
-  if(lookupError) {console.error("Could not find the category to rename:",lookupError);showAdminFeedback("Could not find that category. Refresh the admin page and try again.",true);return;}
-  if(!await withAdminAccess(()=>state.supabase.from("store_categories").update({name}).eq("id",categoryRow.id))) return;
-  try {await loadStoreData();renderAdmin();showToast("Category updated.");}
-  catch(error) {console.error("Could not refresh renamed category:",error);showAdminFeedback("The category was renamed but the shop list could not be refreshed.",true);}
+  category.name=name;
+  draft.products.forEach(product=>{if(product.categoryId===category.id) product.category=name;});
+  if(!stageCatalogDraft(draft)) return;
+  showToast("Category name saved as a local draft.");
 }
 async function deleteCategory(category) {
   if(categories.length<=1) {showAdminFeedback("Keep at least one category in your shop.",true);return;}
   const replacement=categories.find(item=>item!==category);
   if(!window.confirm(`Delete "${category}"? Products in this category will be moved to "${replacement}".`)) return;
-  const {data:rows,error:lookupError}=await state.supabase.from("store_categories").select("id,name").in("name",[category,replacement]);
-  if(lookupError) {console.error("Could not find categories to update:",lookupError);showAdminFeedback("Could not find the selected categories. Refresh and try again.",true);return;}
-  const target=rows.find(row=>row.name===category),destination=rows.find(row=>row.name===replacement);
+  const draft=state.catalogDraft?cloneCatalogDraft(state.catalogDraft):createCatalogDraft();
+  if(!draft) {showAdminFeedback("Sign in again before editing the store.",true);return;}
+  const target=draft.categories.find(item=>item.name===category);
+  const destination=draft.categories.find(item=>item.name===replacement);
   if(!target||!destination) {showAdminFeedback("A category could not be found. Refresh and try again.",true);return;}
-  const success=await withAdminAccess(()=>state.supabase.rpc("admin_delete_store_category",{target_category_id:target.id,replacement_category_id:destination.id}));
-  if(!success) return;
-  if(state.category===category) state.category="All";
-  try {await loadStoreData();renderAdmin();showToast(`Category removed. Products moved to ${replacement}.`);}
-  catch(error) {console.error("Could not refresh products after deleting category:",error);showAdminFeedback("The category was removed but the shop list could not be refreshed.",true);}
+  draft.products.forEach(product=>{
+    if(product.categoryId===target.id) {
+      product.categoryId=destination.id;
+      product.category=destination.name;
+    }
+  });
+  draft.categories=draft.categories.filter(item=>item.id!==target.id);
+  if(!stageCatalogDraft(draft)) return;
+  showToast(`Category removal saved locally. Products will move to ${replacement} when published.`);
 }
 function editProduct(id) {
   const product=getProduct(id);
@@ -541,40 +726,120 @@ async function saveProduct(form) {
   if(!name||name.length>70||!category||!Number.isSafeInteger(price)||price<1||!Number.isSafeInteger(stock)||stock<0||!description) {showAdminFeedback("Check the product name, category, price, stock and description.",true);return;}
   if(imageInput&&!/^https:\/\/[^\s"'<>]+$/i.test(imageInput)) {showAdminFeedback("Product image links must begin with https://.",true);return;}
   const existing=getProduct(state.editingProduct);
-  const payload={
-    name,category_id:await getCategoryId(category),price_lkr:price,stock_quantity:stock,
+  const draft=state.catalogDraft?cloneCatalogDraft(state.catalogDraft):createCatalogDraft();
+  const categoryRow=draft?.categories.find(item=>item.name===category);
+  if(!draft||!categoryRow) {showAdminFeedback("Could not find that product category. Refresh and try again.",true);return;}
+  const id=existing?.id||newCatalogId();
+  if(!id) return;
+  const product={
+    id,
+    categoryId:categoryRow.id,
+    name,
+    category,
+    price,
+    stock,
     badge:String(data.get("badge")||"").trim().slice(0,24),
     featured:data.get("featured")==="on",
-    image_url:imageInput||(existing?existing.image:"assets/home-storage-basket.svg"),
+    image:imageInput||(existing?existing.image:"assets/home-storage-basket.svg"),
     description:description.slice(0,240)
   };
-  if(!payload.category_id) {showAdminFeedback("Could not find that product category. Refresh and try again.",true);return;}
-  const query=existing
-    ?state.supabase.from("store_products").update(payload).eq("id",existing.id)
-    :state.supabase.from("store_products").insert(payload);
-  if(!await withAdminAccess(()=>query)) return;
-  const productId=existing?.id;
-  if(productId&&stock===0) delete state.cart[productId];
-  else if(productId&&state.cart[productId]) state.cart[productId]=Math.min(state.cart[productId],stock);
-  saveCart();
+  const existingIndex=draft.products.findIndex(item=>item.id===id);
+  if(existingIndex<0) draft.products.unshift(product);
+  else draft.products[existingIndex]=product;
+  if(!stageCatalogDraft(draft)) return;
   resetProductForm();
-  try {await loadStoreData();renderAdmin();renderCart();updateCartBadge();showToast(existing?"Product updated.":"Product added to the shop.");}
-  catch(error) {console.error("Could not refresh the product catalog:",error);showAdminFeedback("The product was saved but the catalog could not be refreshed.",true);}
-}
-async function getCategoryId(name) {
-  const {data,error}=await state.supabase.from("store_categories").select("id").eq("name",name).single();
-  if(error) {console.error("Could not find selected category:",error);return null;}
-  return data.id;
+  showToast(existing?"Product changes saved locally.":"Product saved locally. Not published yet.");
 }
 async function deleteProduct(id) {
   const product=getProduct(id);
   if(!product||!window.confirm(`Delete "${product.name}" from your product list?`)) return;
-  if(!await withAdminAccess(()=>state.supabase.from("store_products").delete().eq("id",id))) return;
-  delete state.cart[id];
-  saveCart();
+  const draft=state.catalogDraft?cloneCatalogDraft(state.catalogDraft):createCatalogDraft();
+  if(!draft) {showAdminFeedback("Sign in again before editing the store.",true);return;}
+  draft.products=draft.products.filter(item=>item.id!==id);
+  if(!stageCatalogDraft(draft)) return;
   if(state.editingProduct===id) resetProductForm();
-  try {await loadStoreData();renderAdmin();renderCart();updateCartBadge();showToast("Product removed from your shop.");}
-  catch(error) {console.error("Could not refresh the product catalog:",error);showAdminFeedback("The product was removed but the catalog could not be refreshed.",true);}
+  showToast("Product removal saved locally. It is not published yet.");
+}
+async function publishCatalogDraft() {
+  const draft=state.catalogDraft;
+  if(!draft||!hasCatalogDraftChanges(draft)) return;
+  if(!state.supabase||!state.adminAuthorized||!state.session?.user?.id) {
+    showAdminFeedback("Administrator authorization is required before publishing.",true);
+    return;
+  }
+  const changes=getCatalogDraftChangeCount(draft);
+  if(!window.confirm(`Publish your saved catalog changes to the live shop now? The public website will update. Changes: ${changes} catalog section${changes===1?"":"s"}.`)) return;
+  let result;
+  try {
+    result=await state.supabase.rpc("admin_publish_store_catalog",{
+      expected_categories:draft.baseCategories,
+      expected_products:draft.baseProducts,
+      target_categories:categorySnapshot(draft.categories),
+      target_products:productSnapshot(draft.products)
+    });
+  } catch(error) {
+    console.error("Could not publish the store catalog:",error);
+    showAdminFeedback("The catalog could not be published because the database could not be reached. Your local draft is preserved.",true);
+    return;
+  }
+  if(result.error) {
+    console.error("The store catalog publish request failed:",result.error);
+    if(String(result.error.message||"").includes("changed since this draft")) {
+      showAdminFeedback("The live catalog changed after this draft was started. Your draft is preserved but cannot overwrite newer changes. Discard it, reload the live catalog, and reapply your edits.",true);
+    } else {
+      showAdminFeedback("The database rejected this publish. Your local draft is preserved; check the database migration and try again.",true);
+    }
+    return;
+  }
+  try {
+    localStorage.removeItem(catalogDraftStorageKey(draft.userId));
+  } catch(error) {
+    console.error("The catalog was published, but its local draft could not be cleared:",error);
+    state.catalogDraft=null;
+    state.catalogDraftError=true;
+    showAdminFeedback("The catalog is live, but this browser could not clear its saved draft. Draft editing is disabled to protect it.",true);
+    return;
+  }
+  state.catalogDraft=null;
+  state.catalogDraftError=false;
+  try {
+    await loadStoreData();
+    deleteInvalidCartItems();
+    refreshCatalogPreview();
+    showAdminFeedback("Your catalog updates are now published on the live shop.");
+  } catch(error) {
+    console.error("The catalog was published, but could not be refreshed:",error);
+    showAdminFeedback("Your catalog was published, but this page could not refresh the live data. Reload before making more changes.",true);
+  }
+}
+async function discardCatalogDraft() {
+  const draft=state.catalogDraft;
+  if(!draft||!window.confirm("Discard all unpublished catalog changes saved in this browser?")) return;
+  try {
+    localStorage.removeItem(catalogDraftStorageKey(draft.userId));
+  } catch(error) {
+    console.error("Could not discard the local store draft:",error);
+    showAdminFeedback("This browser could not remove the local draft. No changes were discarded.",true);
+    return;
+  }
+  state.catalogDraft=null;
+  state.catalogDraftError=false;
+  try {
+    await loadStoreData();
+    refreshCatalogPreview();
+    showAdminFeedback("The unpublished draft was discarded. The live catalog is shown.");
+  } catch(error) {
+    console.error("Could not reload the live catalog after discarding the draft:",error);
+    showAdminFeedback("The draft was discarded, but the live catalog could not be reloaded. Refresh the page before continuing.",true);
+  }
+}
+function deleteInvalidCartItems() {
+  for(const [id,quantity] of Object.entries(state.cart)) {
+    const product=getProduct(id);
+    if(!product||product.stock===0) delete state.cart[id];
+    else if(quantity>product.stock) state.cart[id]=product.stock;
+  }
+  saveCart();
 }
 
 function closeModals() {document.querySelectorAll(".modal-backdrop").forEach(modal=>{modal.hidden=true;});}
@@ -610,7 +875,7 @@ document.addEventListener("click",event=>{
     case "remove": removeFromCart(target.dataset.id);break;
     case "checkout": if(cartCount()) setView("checkout");break;
     case "login":
-      if(state.session?.user) setView(state.adminAuthorized?"admin":"admin-login");
+      if(state.session?.user) setView(state.adminAuthorized?"profile":"admin-login");
       else document.getElementById("login-modal").hidden=false;
       break;
     case "close-modal": closeModals();break;
@@ -619,6 +884,8 @@ document.addEventListener("click",event=>{
     case "delete-category": void deleteCategory(target.dataset.category);break;
     case "edit-product": editProduct(target.dataset.id);break;
     case "delete-product": void deleteProduct(target.dataset.id);break;
+    case "publish-catalog": void publishCatalogDraft();break;
+    case "discard-catalog": void discardCatalogDraft();break;
     case "cancel-product-edit": resetProductForm();break;
     case "admin-google-login": void startAdminGoogleLogin();break;
     case "admin-signout": void signOutAdmin();break;

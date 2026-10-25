@@ -32,9 +32,9 @@
       </nav>
       <div class="header-actions">
         <button class="icon-button search-toggle" type="button" aria-label="Search products"><span>⌕</span></button>
-        <button class="account-button" type="button" data-action="login" aria-label="Sign in"><span class="user-icon" aria-hidden="true">♙</span><span id="account-label">Sign in</span></button>
+        <button class="account-button" type="button" data-action="login" aria-label="Sign in"><span class="user-icon" aria-hidden="true">♙</span><img class="account-avatar" id="account-avatar" alt="" hidden><span id="account-label">Sign in</span></button>
         <button class="cart-button" type="button" data-view="cart" aria-label="Shopping cart">
-          <span class="bag-icon">▱</span><span class="cart-label">Cart</span><span class="cart-count">0</span>
+          <svg class="bag-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 8.5h14l1 12H4l1-12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="cart-label">Cart</span><span class="cart-count">0</span>
         </button>
       </div>
     </header>
@@ -114,28 +114,50 @@
         <div class="empty-state" id="no-products" hidden><span>⌕</span><h2>No products found</h2><p>Try another search or category.</p><button class="text-button" type="button" data-action="clear-filters">Clear filters →</button></div>
       </section>
 
+      <section class="view profile-view" id="profile-view" hidden>
+        <div class="page-banner profile-banner"><div class="eyebrow"><span class="eyebrow-line"></span> YOUR NEXON ACCOUNT</div><h1>Welcome <span id="profile-first-name">back.</span></h1><p>Your account details and quick links, all in one place.</p></div>
+        <div class="profile-layout">
+          <section class="profile-card">
+            <div class="profile-card-heading"><div><div class="eyebrow">ACCOUNT PROFILE</div><h2>Your details</h2></div><span class="profile-secure-tag"><span></span> Signed in</span></div>
+            <div class="profile-identity"><div class="profile-avatar-wrap"><img id="profile-avatar" alt="" hidden><span id="profile-initials">N</span></div><div class="profile-identity-copy"><strong id="profile-name">Your profile</strong><span id="profile-email"></span><small>Google account</small></div></div>
+            <p class="profile-note">Your profile is connected to your signed-in Google account.</p>
+            <button class="button profile-signout" type="button" data-action="admin-signout">Sign out</button>
+          </section>
+          <section class="profile-card profile-cart-card">
+            <div class="eyebrow">READY WHEN YOU ARE</div><h2>Your shopping bag.</h2><p id="profile-cart-summary">Your cart is waiting for you.</p>
+            <button class="button button-primary full-width" type="button" data-view="cart"><svg class="button-cart-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 8.5h14l1 12H4l1-12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>View cart <span id="profile-cart-count" class="profile-cart-count">0</span><span aria-hidden="true">→</span></button>
+            <button class="text-button profile-shop-link" type="button" data-view="products">Continue shopping <span>↗</span></button>
+          </section>
+          <section class="profile-card profile-admin-card" id="profile-admin-card" hidden>
+            <div class="eyebrow">STORE TOOLS</div><h2>Manage your shop.</h2><p>Review product and category changes in your local draft before publishing them to the live store.</p>
+            <button class="button profile-admin-link" type="button" data-view="admin">Open store admin <span>↗</span></button>
+          </section>
+        </div>
+      </section>
+
       <section class="view admin-login-view" id="admin-login-view" hidden>
-        <div class="page-banner admin-banner"><div class="eyebrow">AUTHORIZED STORE ADMIN</div><h1>Admin <span>sign in.</span></h1><p>Sign in with the approved Google account to manage store categories and products.</p></div>
+        <div class="page-banner admin-banner"><div class="eyebrow">SECURE GOOGLE SIGN-IN</div><h1>Sign in to <span>Nexon.</span></h1><p>Continue with the Google account approved for store access.</p></div>
         <div class="admin-login-card">
           <div class="admin-login-lock">⌑</div>
-          <div class="eyebrow">PRIVATE STORE DASHBOARD</div>
-          <h2>Your store,<br><span>in your hands.</span></h2>
+          <div class="eyebrow">YOUR ACCOUNT</div>
+          <h2>Welcome<br><span>back.</span></h2>
           <p id="admin-auth-message" class="admin-auth-message" role="status" aria-live="polite">Checking secure Google sign-in setup…</p>
           <button class="button button-primary full-width" id="admin-google-login" type="button" data-action="admin-google-login" disabled><span class="google-mark" aria-hidden="true">G</span>Continue with Google <span>↗</span></button>
-          <small>Only the store administrator approved in the secure database can access admin tools. Entering an email address alone does not grant access.</small>
+          <small>Google sign-in is currently enabled only for the store administrator. Customer accounts are not available yet.</small>
           <button type="button" class="text-button" data-view="home">Back to the shop ←</button>
         </div>
       </section>
 
       <section class="view admin-view" id="admin-view" hidden>
-        <div class="page-banner admin-banner"><div class="eyebrow">SECURE STORE MANAGEMENT</div><h1>Manage your <span>shop.</span></h1><p>Add categories and products. Changes are protected by Google authentication and database authorization.</p></div>
+        <div class="page-banner admin-banner"><div class="eyebrow">SECURE STORE MANAGEMENT</div><h1>Manage your <span>shop.</span></h1><p>Changes stay as a private draft in this browser until you review them and choose to publish.</p></div>
         <div class="admin-account-bar"><div><span class="admin-account-status-dot"></span><span>Signed in as</span><strong id="admin-account-email"></strong></div><button class="button admin-signout" type="button" data-action="admin-signout">Sign out</button></div>
         <div class="admin-feedback" id="admin-feedback" role="status" aria-live="polite" hidden></div>
+        <div class="admin-draft-bar" id="admin-draft-bar" role="status" aria-live="polite" hidden><p id="admin-draft-message"></p><div id="admin-draft-actions" class="admin-draft-actions"><button class="button admin-signout" type="button" data-action="discard-catalog">Discard draft</button><button class="button button-primary" type="button" data-action="publish-catalog">Publish updates</button></div></div>
         <div class="admin-layout" id="admin-layout" hidden>
           <section class="admin-card category-manager">
             <div class="admin-card-heading"><div><div class="eyebrow">YOUR SHOP COLLECTIONS</div><h2>Categories</h2></div><span class="admin-counter" id="admin-category-count">0</span></div>
             <form id="category-form" class="admin-inline-form"><label for="new-category-name">Add a category</label><div class="admin-input-row"><input id="new-category-name" name="category" maxlength="32" placeholder="e.g. Beauty & personal care" required><button class="button button-primary" type="submit">Add category <span>+</span></button></div></form>
-            <p class="admin-hint">Categories you add appear as filters in the Shop. Choose a category when you add a product.</p>
+            <p class="admin-hint">Category edits are previewed locally and only appear to shoppers after you publish.</p>
             <div class="admin-category-list" id="admin-category-list"></div>
           </section>
           <section class="admin-card product-manager">
@@ -144,7 +166,7 @@
               <label>Product name<input name="name" maxlength="70" placeholder="e.g. Stainless steel water bottle" required></label>
               <div class="form-row"><label>Category<select name="category" id="product-category" required></select></label><label>Price (LKR)<input name="price" type="number" min="1" step="1" placeholder="4500" required></label></div>
               <div class="form-row"><label>Stock quantity<input name="stock" type="number" min="0" step="1" value="10" required></label><label>Product label <span class="optional">(optional)</span><input name="badge" maxlength="24" placeholder="NEW"></label></div>
-              <label>Image URL <span class="optional">(optional; use a public https:// image)</span><input name="image" type="url" placeholder="https://..."></label>
+              <label>Image URL <span class="optional">(optional; public image link — see README for Google Drive)</span><input name="image" type="url" placeholder="https://drive.google.com/uc?export=view&id=..."></label>
               <label>Description<textarea name="description" rows="2" maxlength="240" placeholder="A few helpful details about the product." required></textarea></label>
               <label class="admin-checkbox"><input name="featured" type="checkbox"> Show in featured products on the home page</label>
               <div class="admin-form-actions"><button class="button button-primary" type="submit" id="product-submit">Add product <span>+</span></button><button class="text-button cancel-edit-button" id="cancel-product-edit" type="button" data-action="cancel-product-edit" hidden>Cancel editing</button></div>
@@ -210,7 +232,7 @@
     </footer>
 
     <div class="modal-backdrop" id="product-modal" hidden><div class="product-modal modal-card" role="dialog" aria-modal="true" aria-label="Product details"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><div id="product-modal-content"></div></div></div>
-    <div class="modal-backdrop" id="login-modal" hidden><div class="login-modal modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><img src="assets/nexon-logo.png" alt="" class="login-logo"><div class="eyebrow">WELCOME TO NEXON</div><h2 id="login-title">Customer accounts,<br><span>coming soon.</span></h2><p>Google sign-in is currently for the store administrator only. You can browse the shop and build a cart without an account.</p><button class="button button-primary full-width" type="button" data-view="admin-login">Store admin sign in <span>↗</span></button><small>Customer accounts are not available yet.</small></div></div>
+    <div class="modal-backdrop" id="login-modal" hidden><div class="login-modal modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title"><button class="modal-close" type="button" data-action="close-modal" aria-label="Close">×</button><img src="assets/nexon-logo.png" alt="" class="login-logo"><div class="eyebrow">WELCOME TO NEXON</div><h2 id="login-title">Your account,<br><span>your way.</span></h2><p>Sign in with Google to open your profile. Store administration is currently limited to the approved store account.</p><button class="button button-primary full-width" type="button" data-view="admin-login"><span class="google-mark" aria-hidden="true">G</span>Continue with Google <span>↗</span></button><small>Shopping is open to everyone. No account is needed to browse or use your cart.</small></div></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
