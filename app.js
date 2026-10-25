@@ -180,7 +180,11 @@ function updateAccountButton(session) {
   label.textContent=signedIn?"My profile":"Sign in";
   button.setAttribute("aria-label",signedIn?`Signed in as ${email||"your account"}. Open your profile.`:"Sign in");
   button.title=signedIn?email||"Open your profile":"Sign in";
-  button.querySelector(".user-icon").textContent=signedIn?(initial||"♙"):"♙";
+  const outlineIcon=button.querySelector(".user-outline");
+  const initialBadge=button.querySelector(".user-initial");
+  outlineIcon.hidden=signedIn;
+  initialBadge.hidden=!signedIn;
+  initialBadge.textContent=signedIn?(initial||"♙"):"";
   const avatar=button.querySelector(".account-avatar");
   avatar.hidden=true;
   avatar.removeAttribute("src");

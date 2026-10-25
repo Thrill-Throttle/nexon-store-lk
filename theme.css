@@ -156,6 +156,10 @@ body{background:var(--bg)}
 .account-avatar{width:25px;height:25px;flex:0 0 25px;border-radius:50%;object-fit:cover}
 .account-avatar,.account-avatar[hidden]{display:none!important}
 .account-button.is-signed-in .user-icon{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;border:1px solid rgba(121,186,255,.4);border-radius:50%;background:linear-gradient(145deg,#203c5d,#12233a);color:#d7eaff;font-size:13px;font-weight:700}
+.user-icon{display:grid;place-items:center}
+.user-outline{display:block;width:20px;height:20px;color:#e6f2ff}
+.user-outline[hidden],.user-initial[hidden]{display:none}
+.user-initial{display:grid;width:100%;height:100%;place-items:center;border-radius:50%}
 .bag-icon{width:21px;height:21px;flex:0 0 21px}
 .profile-banner{padding-top:58px;padding-bottom:52px}
 .profile-layout{max-width:1080px;margin:30px auto 70px;display:grid;grid-template-columns:minmax(240px,.72fr) minmax(0,1.45fr);grid-template-areas:"identity orders" "cart orders" "admin orders";gap:18px;align-items:start}
