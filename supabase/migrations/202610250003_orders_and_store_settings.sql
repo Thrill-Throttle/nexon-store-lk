@@ -151,11 +151,7 @@ begin
   select account.email into current_email
   from auth.users as account
   where account.id = current_user_id
-    and account.email_confirmed_at is not null
-    and (
-      account.raw_app_meta_data ->> 'provider' = 'google'
-      or coalesce(account.raw_app_meta_data -> 'providers', '[]'::jsonb) ? 'google'
-    );
+    and account.email_confirmed_at is not null;
   if current_email is null then
     raise exception 'A verified account email is required';
   end if;

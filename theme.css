@@ -188,3 +188,15 @@ body{background:var(--bg)}
 @media(max-width:700px){.profile-layout{grid-template-columns:minmax(0,1fr);grid-template-areas:"identity" "cart" "orders" "admin";margin-top:18px;margin-bottom:45px;gap:12px}.profile-card{padding:20px}}
 @media(max-width:420px){.account-avatar{display:none}.account-button.is-signed-in{max-width:120px;justify-content:flex-start;overflow:visible}.account-button.is-signed-in #account-label{display:inline}.bag-icon{width:19px;height:19px;flex-basis:19px}}
 @media(max-width:700px){.profile-orders-card{grid-column:auto}}
+.account-auth-form{display:grid;gap:12px;margin:16px 0;text-align:left}
+.account-auth-form label{display:grid;gap:6px;color:#d5deea;font-size:10px}
+.account-auth-form input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:3px;outline:none;background:#0c1523;color:var(--text);font:inherit;font-size:12px}
+.account-auth-form input:focus{border-color:#65adff}
+.account-auth-form input:focus-visible,.login-modal button:focus-visible{outline:2px solid #79baff;outline-offset:2px}
+.account-auth-form .button:disabled{opacity:.55;cursor:wait}
+.account-auth-message{margin:12px 0;padding:10px;border:1px solid rgba(99,173,255,.25);border-radius:3px;background:rgba(51,125,207,.08);color:#c8def8;font-size:10px;line-height:1.6}
+.account-auth-message.is-error{border-color:rgba(250,147,115,.42);background:rgba(164,65,48,.13);color:#ffc5b6}
+.account-mode-toggle,.account-reset-button,.account-back-button{display:block;margin:8px auto;font-size:10px}
+.account-auth-divider{display:flex;align-items:center;gap:12px;margin:15px 0;color:#99abc2;font-size:9px}
+.account-auth-divider:before,.account-auth-divider:after{height:1px;flex:1;background:var(--line);content:""}
+.login-modal [hidden]{display:none!important}

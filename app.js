@@ -42,6 +42,7 @@ const state = {
   isLoadingOrders:false,
   pendingAdminRoute:false,
   pendingAuthView:null,
+  accountMode:"signin",
   adminMessage:"Preparing Google sign-in…"
 };
 const lkr = new Intl.NumberFormat("en-LK",{style:"currency",currency:"LKR",maximumFractionDigits:0});
@@ -123,7 +124,7 @@ function setView(requestedView) {
   }
   if(view==="checkout"&&!state.session?.user) {
     state.pendingAuthView="checkout";
-    state.adminMessage="Sign in with Google to save your checkout and track your orders.";
+    state.adminMessage="Sign in or create an account to save your checkout and track your orders.";
     view="admin-login";
   }
   if(view==="admin"&&!state.adminAuthorized) {
@@ -379,6 +380,53 @@ function setAdminMessage(message,isError=false) {
     element.classList.toggle("is-error",isError);
   }
 }
+function setAccountMessage(message,isError=false) {
+  const element=document.getElementById("account-auth-message");
+  element.textContent=message;
+  element.hidden=!message;
+  element.classList.toggle("is-error",isError);
+}
+function setAccountMode(mode) {
+  state.accountMode=mode;
+  const isSignup=mode==="signup";
+  const isReset=mode==="reset";
+  const isUpdatePassword=mode==="update-password";
+  const nameField=document.getElementById("account-name-field");
+  const emailField=document.getElementById("account-email-field");
+  const passwordField=document.getElementById("account-password-field");
+  const nameInput=document.getElementById("account-name");
+  const emailInput=document.getElementById("account-email");
+  const passwordInput=document.getElementById("account-password");
+  const submit=document.getElementById("account-submit");
+  const modeToggle=document.getElementById("account-mode-toggle");
+  const resetButton=document.getElementById("account-reset-button");
+  const backButton=document.getElementById("account-back-button");
+  const divider=document.getElementById("account-auth-divider");
+  const googleButton=document.getElementById("customer-google-login");
+  const intro=document.getElementById("account-modal-intro");
+  nameField.hidden=!isSignup;
+  nameInput.required=isSignup;
+  emailField.hidden=isUpdatePassword;
+  emailInput.required=!isUpdatePassword;
+  passwordField.hidden=isReset;
+  passwordInput.required=!isReset;
+  passwordInput.autocomplete=isSignup||isUpdatePassword?"new-password":"current-password";
+  submit.textContent=isSignup?"Create account":isReset?"Send reset link":isUpdatePassword?"Update password":"Sign in";
+  modeToggle.hidden=isReset||isUpdatePassword;
+  modeToggle.textContent=isSignup?"Already have an account? Sign in →":"Create an account →";
+  resetButton.hidden=mode!=="signin";
+  backButton.hidden=!isReset&&!isUpdatePassword;
+  divider.hidden=isUpdatePassword;
+  googleButton.hidden=isUpdatePassword;
+  intro.textContent=isSignup
+    ?"Create an account to save your details and track your orders. Verify your email before signing in."
+    :isReset
+      ?"Enter your email address and we’ll send you a secure password reset link."
+      :isUpdatePassword
+        ?"Choose a new password for your Nexon account."
+        :"Sign in or create a customer account to save your details and track orders.";
+  setAccountMessage("");
+}
 function showAdminFeedback(message,isError=false) {
   const element=document.getElementById("admin-feedback");
   element.textContent=message;
@@ -430,6 +478,11 @@ function renderProfile() {
   document.getElementById("profile-first-name").textContent=`${firstName}.`;
   document.getElementById("profile-name").textContent=fullName;
   document.getElementById("profile-email").textContent=email;
+  const isGoogle=isGoogleAccount(user);
+  document.querySelector(".profile-identity-copy small").textContent=isGoogle?"Google account":"Email account";
+  document.querySelector(".profile-note").textContent=isGoogle
+    ?"Your profile is connected to your signed-in Google account."
+    :"Your profile is connected to your verified email account.";
   const initials=document.getElementById("profile-initials");
   initials.textContent=firstName.slice(0,1).toUpperCase();
   document.getElementById("profile-admin-card").hidden=!state.adminAuthorized;
@@ -788,24 +841,13 @@ async function updateAuthState(session) {
   if(!session?.user) {
     state.authReady=true;
     state.adminMessage=state.supabase
-      ?"Sign in with Google to manage your account and track orders. Store admin access is restricted."
+      ?"Sign in or create an account to manage your profile and track orders. Store admin access is restricted."
       :"Secure Google sign-in is not configured yet. Complete the setup steps in README.md.";
     if(state.pendingAdminRoute) {state.pendingAdminRoute=false;state.pendingAuthView="admin";setView("admin-login");}
     else if(state.pendingAuthView) setView("admin-login");
     else if(state.currentView==="admin") setView("admin-login");
     else if(state.currentView==="admin-login") renderAdminLogin();
     else if(state.currentView==="profile"||state.currentView==="checkout") setView("admin-login");
-    return;
-  }
-  if(!isGoogleAccount(session.user)) {
-    state.authReady=true;
-    state.adminMessage="Use a Google account to sign in.";
-    setAdminLinksVisible(false);
-    if(state.pendingAdminRoute||state.currentView==="admin-login"||state.currentView==="admin"||state.currentView==="profile"||state.currentView==="checkout") {
-      state.pendingAdminRoute=false;
-      if(state.currentView!=="admin-login") setView("admin-login");
-      else renderAdminLogin();
-    }
     return;
   }
   let roleResult;
@@ -833,7 +875,7 @@ async function updateAuthState(session) {
   state.authReady=true;
   state.adminMessage=state.adminAuthorized
     ?`Verified administrator: ${session.user.email}`
-    :`Signed in as ${session.user.email||"Google account"}.`;
+    :`Signed in as ${session.user.email||"your account"}.`;
   setAdminLinksVisible(state.adminAuthorized);
   if(state.adminAuthorized) {
     try {
@@ -900,8 +942,14 @@ async function initializeAuth() {
     return;
   }
   state.supabase=window.supabase.createClient(url,anonKey,{auth:{flowType:"pkce",autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
-  state.supabase.auth.onAuthStateChange((_event,session)=>{
-    setTimeout(()=>{void updateAuthState(session);},0);
+  state.supabase.auth.onAuthStateChange((event,session)=>{
+    setTimeout(()=>{
+      if(event==="PASSWORD_RECOVERY") {
+        setAccountMode("update-password");
+        document.getElementById("login-modal").hidden=false;
+      }
+      void updateAuthState(session);
+    },0);
   });
   const {data,error}=await state.supabase.auth.getSession();
   if(error) {
@@ -1205,7 +1253,10 @@ document.addEventListener("click",event=>{
     case "checkout": if(cartCount()) setView("checkout");break;
     case "login":
       if(state.session?.user) setView("profile");
-      else document.getElementById("login-modal").hidden=false;
+      else {
+        setAccountMode("signin");
+        document.getElementById("login-modal").hidden=false;
+      }
       break;
     case "close-modal": closeModals();break;
     case "search": searchProducts();break;
@@ -1221,6 +1272,19 @@ document.addEventListener("click",event=>{
       state.pendingAuthView=state.pendingAuthView||"profile";
       setView("admin-login");
       void startGoogleLogin();
+      break;
+    case "email-account":
+      setAccountMode("signin");
+      document.getElementById("login-modal").hidden=false;
+      break;
+    case "toggle-account-mode":
+      setAccountMode(state.accountMode==="signup"?"signin":"signup");
+      break;
+    case "reset-account-password":
+      setAccountMode("reset");
+      break;
+    case "account-back-to-signin":
+      setAccountMode("signin");
       break;
     case "refresh-customer-orders": void loadCustomerOrders();break;
     case "refresh-admin-orders": void loadAdminOrders();break;
@@ -1270,6 +1334,70 @@ document.querySelectorAll(".modal-backdrop").forEach(backdrop=>backdrop.addEvent
 document.getElementById("checkout-form").addEventListener("submit",event=>{
   event.preventDefault();
   void placeStoreOrder(event.currentTarget);
+});
+document.getElementById("customer-auth-form").addEventListener("submit",async event=>{
+  event.preventDefault();
+  const form=event.currentTarget;
+  const data=new FormData(form);
+  const email=String(data.get("email")||"").trim();
+  const password=String(data.get("password")||"");
+  const submit=document.getElementById("account-submit");
+  if(!state.supabase) {
+    setAccountMessage("Secure account access is not configured. Please try again later.",true);
+    return;
+  }
+  submit.disabled=true;
+  setAccountMessage(state.accountMode==="signup"?"Creating your account…":state.accountMode==="reset"?"Sending your reset link…":state.accountMode==="update-password"?"Updating your password…":"Signing in…");
+  try {
+    let result;
+    if(state.accountMode==="signup") {
+      result=await state.supabase.auth.signUp({
+        email,
+        password,
+        options:{
+          data:{full_name:String(data.get("fullName")||"").trim()},
+          emailRedirectTo:`${location.origin}${location.pathname}#${state.pendingAuthView||"profile"}`
+        }
+      });
+    } else if(state.accountMode==="signin") {
+      result=await state.supabase.auth.signInWithPassword({email,password});
+    } else if(state.accountMode==="reset") {
+      result=await state.supabase.auth.resetPasswordForEmail(email,{
+        redirectTo:`${location.origin}${location.pathname}`
+      });
+    } else {
+      result=await state.supabase.auth.updateUser({password});
+    }
+    if(result.error) {
+      console.error("Customer account authentication failed:",result.error);
+      const isInvalidCredentials=result.error.message==="Invalid login credentials";
+      setAccountMessage(isInvalidCredentials?"The email or password is incorrect.":result.error.message||"The account request could not be completed. Please try again.",true);
+      return;
+    }
+    if(state.accountMode==="signup") {
+      if(result.data.session) {
+        state.pendingAuthView=state.pendingAuthView||"profile";
+        closeModals();
+      } else {
+        setAccountMessage("Your account was created. Check your email for a verification link, then sign in.");
+      }
+    } else if(state.accountMode==="signin") {
+      state.pendingAuthView=state.pendingAuthView||"profile";
+      closeModals();
+    } else if(state.accountMode==="reset") {
+      setAccountMessage("If an account exists for that email, a password reset link has been sent.");
+    } else {
+      state.pendingAuthView=state.pendingAuthView||"profile";
+      closeModals();
+      setAccountMode("signin");
+      showToast("Your password has been updated.");
+    }
+  } catch(error) {
+    console.error("Customer account authentication could not reach Supabase:",error);
+    setAccountMessage("The account service could not be reached. Check your connection and try again.",true);
+  } finally {
+    submit.disabled=false;
+  }
 });
 
 document.getElementById("year").textContent=new Date().getFullYear();
