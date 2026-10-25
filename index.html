@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="theme.css?v=profile-avatar-20261025">
+    <link rel="stylesheet" href="theme.css?v=admin-general-20261025">
   </head>
   <body>
     <div class="announcement">
@@ -194,17 +194,6 @@
                 <div class="admin-input-row"><input id="delivery-fee" name="deliveryFee" type="number" min="0" max="1000000" step="1" value="0" required><button class="button button-primary" type="submit">Save fee</button></div>
               </form>
               <p class="admin-hint" id="delivery-fee-status">Loading store settings…</p>
-            </section>
-            <section class="admin-card logo-settings-card">
-              <div class="admin-card-heading"><div><div class="eyebrow">STORE BRANDING</div><h2>Website logo</h2></div></div>
-              <p class="admin-hint">Choose a PNG, JPEG, or WebP image up to 5 MB. Preview it first; publishing replaces the logo across the shop.</p>
-              <div class="store-logo-preview"><img id="admin-logo-preview" src="assets/nexon-logo.png" alt="Current store logo preview"></div>
-              <form id="logo-form" class="logo-settings-form">
-                <label for="store-logo-file">Choose logo image</label>
-                <input id="store-logo-file" name="logo" type="file" accept="image/png,image/jpeg,image/webp" required>
-                <p class="admin-hint" id="logo-status" role="status">Current logo is shown across the website.</p>
-                <button class="button button-primary" type="submit" id="publish-logo-button">Publish logo</button>
-              </form>
             </section>
           </section>
           <section class="admin-section" id="admin-orders-section">

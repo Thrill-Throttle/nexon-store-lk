@@ -34,7 +34,6 @@ const state = {
   catalogDraft:null,
   catalogDraftError:false,
   storeSettings:{delivery_fee_lkr:0},
-  logoPreviewUrl:null,
   customerOrders:[],
   adminOrders:[],
   knownAdminOrderIds:null,
@@ -68,79 +67,6 @@ function getPublicStoreLogoUrl(path,updatedAt) {
 function applyStoreLogo(path,updatedAt) {
   const url=getPublicStoreLogoUrl(path,updatedAt);
   document.querySelectorAll(".store-logo").forEach(image=>{image.src=url;});
-  const preview=document.getElementById("admin-logo-preview");
-  if(preview&&!state.logoPreviewUrl) preview.src=url;
-}
-function previewStoreLogo(file) {
-  const status=document.getElementById("logo-status");
-  const preview=document.getElementById("admin-logo-preview");
-  if(!file) {
-    if(state.logoPreviewUrl) URL.revokeObjectURL(state.logoPreviewUrl);
-    state.logoPreviewUrl=null;
-    applyStoreLogo(state.storeSettings.logo_path,state.storeSettings.logo_updated_at);
-    status.textContent="Choose a PNG, JPEG, or WebP image up to 5 MB.";
-    return;
-  }
-  if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>5*1024*1024) {
-    document.getElementById("store-logo-file").value="";
-    if(state.logoPreviewUrl) URL.revokeObjectURL(state.logoPreviewUrl);
-    state.logoPreviewUrl=null;
-    applyStoreLogo(state.storeSettings.logo_path,state.storeSettings.logo_updated_at);
-    status.textContent="Choose a PNG, JPEG, or WebP image no larger than 5 MB.";
-    showAdminFeedback(status.textContent,true);
-    return;
-  }
-  if(state.logoPreviewUrl) URL.revokeObjectURL(state.logoPreviewUrl);
-  state.logoPreviewUrl=URL.createObjectURL(file);
-  preview.src=state.logoPreviewUrl;
-  status.textContent=`Previewing ${file.name}. Publish the logo when you're ready.`;
-}
-async function publishStoreLogo(form) {
-  if(!state.adminAuthorized||!state.supabase) return;
-  const file=new FormData(form).get("logo");
-  if(!(file instanceof File)||!file.size) {
-    showAdminFeedback("Choose a logo image before publishing.",true);
-    return;
-  }
-  if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>5*1024*1024) {
-    showAdminFeedback("Choose a PNG, JPEG, or WebP image no larger than 5 MB.",true);
-    return;
-  }
-  if(!window.confirm("Publish this logo across the live storefront now?")) return;
-  const button=document.getElementById("publish-logo-button");
-  button.disabled=true;
-  const status=document.getElementById("logo-status");
-  status.textContent="Uploading the new logo…";
-  let logoUploaded=false;
-  try {
-    if(!window.crypto?.randomUUID) throw new Error("Secure logo IDs are not supported by this browser.");
-    const logoPath=`store-logo/${window.crypto.randomUUID()}`;
-    const {error:uploadError}=await state.supabase.storage.from(STORE_LOGO_BUCKET)
-      .upload(logoPath,file,{cacheControl:"3600",contentType:file.type,upsert:false});
-    if(uploadError) throw uploadError;
-    logoUploaded=true;
-    const {error:updateError}=await state.supabase.rpc("admin_update_store_logo",{p_logo_path:logoPath});
-    if(updateError) throw updateError;
-    if(state.logoPreviewUrl) URL.revokeObjectURL(state.logoPreviewUrl);
-    state.logoPreviewUrl=null;
-    form.reset();
-    const settingsLoaded=await loadStoreSettings(true);
-    if(!settingsLoaded) {
-      status.textContent="Logo uploaded, but the page could not refresh its settings. Reload to verify the live logo.";
-      showAdminFeedback(status.textContent,true);
-      return;
-    }
-    status.textContent="Your new logo is now live across the storefront.";
-    showAdminFeedback("Store logo published successfully.");
-  } catch(error) {
-    console.error("Could not publish the store logo:",error);
-    status.textContent=logoUploaded
-      ?"The logo file uploaded, but publishing failed. The existing storefront logo is unchanged; check the branding migration and retry."
-      :"Logo upload failed. Check the branding migration and connection, then retry.";
-    showAdminFeedback(status.textContent,true);
-  } finally {
-    button.disabled=false;
-  }
 }
 function loadCart() {
   const saved=readSavedValue("nexon-cart",{});
@@ -1322,13 +1248,6 @@ document.getElementById("product-form").addEventListener("submit",event=>{
 document.getElementById("delivery-settings-form").addEventListener("submit",event=>{
   event.preventDefault();
   void saveDeliveryFee(event.currentTarget);
-});
-document.getElementById("store-logo-file").addEventListener("change",event=>{
-  previewStoreLogo(event.currentTarget.files?.[0]||null);
-});
-document.getElementById("logo-form").addEventListener("submit",event=>{
-  event.preventDefault();
-  void publishStoreLogo(event.currentTarget);
 });
 document.querySelector(".admin-tabs").addEventListener("click",event=>{
   const tab=event.target.closest("[data-admin-section]");

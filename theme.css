@@ -106,13 +106,6 @@ body{background:var(--bg)}
 .admin-empty{padding:16px 0;color:#9eafc5;font-size:10px}
 .delivery-settings-form label{display:block;margin-bottom:8px;color:#d5deea;font-size:10px}
 .delivery-settings-form .admin-input-row input{max-width:220px}
-.store-logo-preview{min-height:150px;margin:0 0 18px;padding:18px;display:grid;place-items:center;background:#0c1523;border:1px dashed rgba(159,190,231,.24);border-radius:4px}
-.store-logo-preview img{display:block;max-width:min(100%,360px);max-height:140px;object-fit:contain}
-.logo-settings-form label{display:block;margin-bottom:8px;color:#d5deea;font-size:10px}
-.logo-settings-form input[type=file]{width:100%;padding:10px;background:#0c1523;border:1px solid var(--line);border-radius:3px;color:#bac9dc;font:inherit;font-size:10px}
-.logo-settings-form input[type=file]::file-selector-button{margin-right:12px;padding:8px 11px;border:1px solid var(--line);border-radius:3px;background:#142238;color:#f5f8ff;font:inherit;cursor:pointer}
-.logo-settings-form .admin-hint{margin-top:10px}
-.logo-settings-form .button:disabled{opacity:.6;cursor:wait}
 .orders-list{display:grid;gap:13px}
 .admin-order-card,.customer-order-card{padding:17px;background:#0c1523;border:1px solid var(--line);border-radius:4px}
 .admin-order-heading,.customer-order-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
